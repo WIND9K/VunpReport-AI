@@ -1,13 +1,14 @@
 """
-duckdb_reader.py — Query lịch sử S3 Parquet bằng DuckDB in-memory.
+duckdb_reader.py — Query lịch sử S3 Parquet (enriched) bằng DuckDB in-memory.
 
 Dùng trong Risk Handler để so sánh hôm nay vs baseline 30/90 ngày.
 DuckDB đọc thẳng S3 Parquet → in-memory → cực nhanh, không cần download.
 
+Enriched schema dùng fields chuẩn: from_user_id, date, amount, direction, etc.
+
 Ví dụ:
     reader = DuckDBReader(s3_bucket="onus-datalake")
     history = reader.get_user_history("onchain", userid="12345", days=30)
-    # → DataFrame: day | tx_count | total | avg_amount
 """
 
 from __future__ import annotations
@@ -17,18 +18,9 @@ from typing import Any, Dict, List, Optional
 
 log = logging.getLogger(__name__)
 
-_duckdb = None
-
-
-def _ensure_duckdb():
-    global _duckdb
-    if _duckdb is None:
-        import duckdb as _duckdb  # type: ignore
-    return _duckdb
-
 
 class DuckDBReader:
-    """Query S3 Parquet lịch sử cho Risk Handler."""
+    """Query S3 Parquet enriched data cho Risk Handler."""
 
     def __init__(
         self,
@@ -44,16 +36,13 @@ class DuckDBReader:
         if self._conn is not None:
             return self._conn
 
-        duckdb = _ensure_duckdb()
-        self._conn = duckdb.connect(":memory:")
+        import duckdb
+        import os
 
-        # Cài httpfs extension cho S3 access
-        self._conn.execute("INSTALL httpfs;")
-        self._conn.execute("LOAD httpfs;")
+        self._conn = duckdb.connect(":memory:")
+        self._conn.execute("INSTALL httpfs; LOAD httpfs;")
         self._conn.execute(f"SET s3_region = '{self.s3_region}';")
 
-        # AWS credentials từ environment (IAM role hoặc .env)
-        import os
         aws_key = os.environ.get("AWS_ACCESS_KEY_ID", "")
         aws_secret = os.environ.get("AWS_SECRET_ACCESS_KEY", "")
         if aws_key and aws_secret:
@@ -63,8 +52,8 @@ class DuckDBReader:
         return self._conn
 
     def _parquet_glob(self, agent_type: str) -> str:
-        """S3 parquet glob path cho agent."""
-        return f"s3://{self.s3_bucket}/raw/{agent_type}/*/*/*/*/data.parquet"
+        """S3 parquet glob path — enriched data."""
+        return f"s3://{self.s3_bucket}/enriched/{agent_type}/*/*/*/*/data.parquet"
 
     # ====================
     # Query methods
@@ -75,27 +64,26 @@ class DuckDBReader:
         agent_type: str,
         userid: str,
         days: int = 30,
-        userid_field: str = "userid",
-        timestamp_field: str = "date",
-        amount_field: str = "amount",
     ) -> List[Dict[str, Any]]:
         """Lấy lịch sử giao dịch user theo ngày trong N ngày gần nhất.
 
+        Enriched schema dùng from_user_id làm userid chính.
+
         Returns:
-            list[dict] với columns: day, tx_count, total, avg_amount
+            list[dict]: day, tx_count, total, avg_amount
         """
         conn = self._get_conn()
         glob = self._parquet_glob(agent_type)
 
         try:
             result = conn.execute(f"""
-                SELECT date_trunc('day', CAST("{timestamp_field}" AS TIMESTAMP)) AS day,
-                       COUNT(*)    AS tx_count,
-                       SUM(CAST("{amount_field}" AS DOUBLE))  AS total,
-                       AVG(CAST("{amount_field}" AS DOUBLE))  AS avg_amount
-                FROM read_parquet('{glob}')
-                WHERE CAST("{userid_field}" AS VARCHAR) = ?
-                  AND CAST("{timestamp_field}" AS TIMESTAMP) >= current_date - INTERVAL ? DAY
+                SELECT date_trunc('day', CAST(date AS TIMESTAMP)) AS day,
+                       COUNT(*) AS tx_count,
+                       SUM(amount) AS total,
+                       AVG(amount) AS avg_amount
+                FROM read_parquet('{glob}', hive_partitioning=true)
+                WHERE from_user_id = ?
+                  AND CAST(date AS TIMESTAMP) >= current_date - INTERVAL ? DAY
                 GROUP BY 1
                 ORDER BY 1
             """, [str(userid), days]).fetchall()
@@ -112,23 +100,12 @@ class DuckDBReader:
         agent_type: str,
         userid: str,
         days: int = 30,
-        userid_field: str = "userid",
-        timestamp_field: str = "date",
-        amount_field: str = "amount",
     ) -> Dict[str, Any]:
-        """Lấy thống kê trung bình user: avg tx/ngày, avg amount/ngày.
+        """Thống kê trung bình user: avg tx/ngày, avg amount/ngày.
 
         Dùng để tính anomaly_x = today_count / avg_daily_count.
-
-        Returns:
-            dict: avg_daily_tx, avg_daily_amount, total_days, total_tx
         """
-        history = self.get_user_history(
-            agent_type, userid, days,
-            userid_field=userid_field,
-            timestamp_field=timestamp_field,
-            amount_field=amount_field,
-        )
+        history = self.get_user_history(agent_type, userid, days)
 
         if not history:
             return {
@@ -144,8 +121,8 @@ class DuckDBReader:
         total_amount = sum(h["total"] or 0 for h in history)
 
         return {
-            "avg_daily_tx": total_tx / total_days if total_days > 0 else 0,
-            "avg_daily_amount": total_amount / total_days if total_days > 0 else 0,
+            "avg_daily_tx": round(total_tx / total_days, 2) if total_days > 0 else 0,
+            "avg_daily_amount": round(total_amount / total_days, 2) if total_days > 0 else 0,
             "total_days": total_days,
             "total_tx": total_tx,
             "has_history": True,
@@ -157,18 +134,15 @@ class DuckDBReader:
         userid: str,
         today_count: int,
         days: int = 30,
-        **kwargs,
     ) -> float:
         """Tính anomaly_x = today_count / avg_daily_count.
 
         Returns:
             anomaly_x (float). 0.0 nếu không có lịch sử.
         """
-        stats = self.get_user_avg_stats(agent_type, userid, days, **kwargs)
-
+        stats = self.get_user_avg_stats(agent_type, userid, days)
         if not stats["has_history"] or stats["avg_daily_tx"] == 0:
             return 0.0
-
         return round(today_count / stats["avg_daily_tx"], 2)
 
     def close(self):
