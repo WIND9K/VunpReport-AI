@@ -3,37 +3,24 @@ base_agent.py — Interface chuẩn cho 5 specialist agents.
 
 Mỗi agent kế thừa BaseAgent và implement:
 - get_report_keys() → list report_key ("onchain/vndc_send", ...)
-- build_risk_rules() → risk rules cho agent này
+- get_risk_rules()  → list risk rule functions
 - (optional) custom ETL logic
 
-Pipeline chuẩn cho mỗi agent:
-  fetch_json(on_batch=_dispatch) → _dispatch gọi 3 nhánh song song:
-    1. ETL Handler  → enrich → normalize → aggregate → bulk_upsert Aurora diary
-    2. Raw Handler  → append .jsonl (ParquetWriter sẽ convert cuối ngày)
-    3. Risk Handler → scoring rules + DuckDB lịch sử → risk_events
-
-Tái sử dụng 100% từ onusreport:
-- report_map.py (REPORT_MAP)
-- report_etl_meta.py (get_report_meta)
-- transform.py (enrich_records, normalize_date_field_to_epoch_midnight, group_and_aggregate)
-- db.py (write_to_db)
-
-Tái sử dụng từ onuslibs:
-- fetch_json (auto-pagination, on_batch callback)
-- DB class (connection pooling, bulk_upsert, transaction)
+Pipeline mỗi agent:
+  fetch_json(on_batch=callback) → enrich → 3 nhánh:
+    1. ETL Handler  → normalize → aggregate → bulk_upsert Aurora diary
+    2. Raw Handler  → append enriched .jsonl (ParquetWriter convert cuối ngày)
+    3. Risk Handler → accumulate enriched data (scoring chạy sau khi fetch xong)
 """
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import time
-import json
 import os
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
-from pathlib import Path
 
 log = logging.getLogger(__name__)
 
@@ -45,11 +32,12 @@ class AgentResult:
         self.agent_name = agent_name
         self.started_at: Optional[datetime] = None
         self.finished_at: Optional[datetime] = None
-        self.status: str = "pending"  # pending | running | success | failed | timeout
+        self.status: str = "pending"
         self.total_records: int = 0
         self.etl_rows: int = 0
         self.raw_rows: int = 0
         self.risk_events: int = 0
+        self.risk_scored: List[Dict] = []  # scored events cho Orchestrator
         self.errors: List[str] = []
         self.duration_seconds: float = 0.0
 
@@ -67,13 +55,7 @@ class AgentResult:
 
     def summary_line(self) -> str:
         icon = "✅" if self.status == "success" else "❌"
-        parts = [
-            f"{icon} {self.agent_name}: {self.total_records} txn",
-            f"{self.risk_events} risk events",
-        ]
-        if self.errors:
-            parts.append(f"{len(self.errors)} errors")
-        return ", ".join(parts)
+        return f"{icon} {self.agent_name}: {self.total_records} txn, {self.risk_events} risk events"
 
 
 class BaseAgent(ABC):
@@ -81,9 +63,9 @@ class BaseAgent(ABC):
     Interface chuẩn cho mọi specialist agent.
 
     Subclass cần implement:
-    - get_report_keys()   → ["onchain/vndc_send", "onchain/vndc_receive", ...]
-    - build_risk_rules()  → dict cấu hình risk rules
-    - (optional) custom_etl(), custom_risk()
+    - get_report_keys()   → ["onchain/vndc_send", ...]
+    - get_risk_rules()    → [rule_func1, rule_func2, ...]
+    - get_schema_name()   → "onchain" (cho schema_registry)
     """
 
     def __init__(
@@ -101,13 +83,14 @@ class BaseAgent(ABC):
         self.timeout_seconds = timeout_seconds
         self.temp_dir = temp_dir
 
-        # Sẽ được inject bởi agent_runner
+        # Handlers — inject bởi runner
         self.etl_handler: Optional[Callable] = None
-        self.raw_handler: Optional[Callable] = None
-        self.risk_handler: Optional[Callable] = None
+        self.raw_handler: Optional[Callable] = None  # ParquetWriter.append_batch
 
         self._result = AgentResult(name)
         self._batch_count = 0
+        self._all_enriched: List[Dict] = []  # tích lũy enriched records cho risk scoring
+        self._current_report_key: str = ""
 
     # =====================
     # Abstract methods
@@ -115,38 +98,29 @@ class BaseAgent(ABC):
 
     @abstractmethod
     def get_report_keys(self) -> List[str]:
-        """Trả về list report_key dạng "group/kind".
-
-        Ví dụ: ["onchain/vndc_send", "onchain/vndc_receive", ...]
-        Agent sẽ fetch lần lượt từng report_key.
-        """
         ...
 
     @abstractmethod
-    def build_risk_rules(self) -> Dict[str, Any]:
-        """Trả về cấu hình risk rules cho agent này.
+    def get_risk_rules(self) -> List[Callable]:
+        """Trả về list risk rule functions. Mỗi function nhận enriched records, trả về list risk events."""
+        ...
 
-        Ví dụ:
-        {
-            "structuring": {"min_txn": 5, "amount_tolerance_pct": 10, "time_window_hours": 2},
-            "velocity": {"threshold_per_hour": 10, "lookback_days": 30},
-            "off_hours": {"time_window": "01:00-04:00", "min_amount_vs_avg": 2.0},
-        }
-        """
+    @abstractmethod
+    def get_schema_name(self) -> str:
+        """Trả về tên agent cho schema_registry enricher."""
         ...
 
     # =====================
-    # Pipeline chính
+    # Pipeline
     # =====================
 
     def _dispatch(self, batch: List[Dict[str, Any]]) -> None:
-        """on_batch callback — gọi 3 handlers song song.
+        """on_batch callback — enrich rồi gọi handlers.
 
-        Được truyền vào fetch_json(on_batch=self._dispatch).
-        Mỗi batch từ API sẽ đồng thời:
-        1. ETL → diary table (Aurora)
-        2. Raw → append .jsonl (temp local)
-        3. Risk → scoring (risk_events)
+        Flow:
+        1. Enrich raw batch → flat fields (schema_registry)
+        2. Raw Handler: append enriched → .jsonl (cho Parquet cuối ngày)
+        3. Tích lũy enriched records (risk scoring chạy SAU khi tất cả batches xong)
         """
         if not batch:
             return
@@ -154,71 +128,119 @@ class BaseAgent(ABC):
         self._batch_count += 1
         self._result.total_records += len(batch)
 
-        # Nhánh 1: ETL Handler
-        if self.etl_handler:
-            try:
-                rows_written = self.etl_handler(self.name, batch)
-                self._result.etl_rows += rows_written or 0
-            except Exception as e:
-                log.warning("[%s] ETL handler error batch #%d: %s", self.name, self._batch_count, e)
-                self._result.errors.append(f"ETL batch#{self._batch_count}: {e}")
+        # 1. Enrich raw → flat fields
+        enriched = batch  # default: không enrich
+        try:
+            from datalake.schema_registry import enrich_batch
+            enriched = enrich_batch(self.get_schema_name(), batch, self._current_report_key)
+        except Exception as e:
+            log.warning("[%s] Enrich failed batch #%d: %s — using raw", self.name, self._batch_count, e)
 
-        # Nhánh 2: Raw Handler (append .jsonl)
+        # 2. Raw Handler — ghi enriched vào .jsonl
         if self.raw_handler:
             try:
-                raw_count = self.raw_handler(self.name, batch)
+                raw_count = self.raw_handler(self.name, enriched)
                 self._result.raw_rows += raw_count or 0
             except Exception as e:
                 log.warning("[%s] Raw handler error batch #%d: %s", self.name, self._batch_count, e)
                 self._result.errors.append(f"Raw batch#{self._batch_count}: {e}")
 
-        # Nhánh 3: Risk Handler
-        if self.risk_handler:
+        # 3. Tích lũy enriched records cho risk scoring
+        self._all_enriched.extend(enriched)
+
+    def _run_risk_scoring(self, event_date: str) -> None:
+        """Chạy risk scoring SAU KHI tất cả batches đã fetch xong.
+
+        Flow:
+        1. Chạy từng risk rule trên toàn bộ enriched records
+        2. Gom raw risk events
+        3. Gọi risk_scorer.score_risk_events() → tính final score + ghi DB
+        """
+        if not self._all_enriched:
+            return
+
+        rules = self.get_risk_rules()
+        if not rules:
+            return
+
+        all_raw_events = []
+
+        # 1. Chạy từng rule
+        for rule_func in rules:
             try:
-                risk_count = self.risk_handler(self.name, batch, self.build_risk_rules())
-                self._result.risk_events += risk_count or 0
+                events = rule_func(self._all_enriched)
+                all_raw_events.extend(events)
+                if events:
+                    log.info("[%s] Rule %s → %d events", self.name, rule_func.__name__, len(events))
             except Exception as e:
-                log.warning("[%s] Risk handler error batch #%d: %s", self.name, self._batch_count, e)
-                self._result.errors.append(f"Risk batch#{self._batch_count}: {e}")
+                log.warning("[%s] Rule %s failed: %s", self.name, rule_func.__name__, e)
+                self._result.errors.append(f"Rule {rule_func.__name__}: {e}")
 
-    def run(self) -> AgentResult:
-        """Chạy agent: fetch tất cả report_keys, dispatch qua 3 nhánh.
+        # 2. Score + ghi DB
+        if all_raw_events:
+            try:
+                from risk.risk_scorer import score_risk_events
+                scored = score_risk_events(all_raw_events, self.name, event_date)
+                self._result.risk_events = len(scored)
+                self._result.risk_scored = scored
+                log.info("[%s] Risk scoring done: %d events scored", self.name, len(scored))
+            except Exception as e:
+                log.error("[%s] Risk scoring failed: %s", self.name, e)
+                self._result.errors.append(f"Risk scoring: {e}")
 
-        Returns:
-            AgentResult với status, counts, errors.
+    def run(self, settings=None) -> AgentResult:
+        """Chạy agent: fetch → enrich → parquet → risk scoring.
+
+        Args:
+            settings: OnusSettings instance (None → tạo mới)
         """
         self._result.started_at = datetime.now()
         self._result.status = "running"
         start_time = time.time()
 
         try:
-            # Import tại đây để tránh circular import
-            from core.onus_client import fetch_report_raw
-            from config.report_map import REPORT_MAP
+            from onuslibs.unified.api import fetch_json
+            from onuslibs.config.settings import OnusSettings
+            from onuslibs.utils.date_utils import build_date_period
+            from config.report_map_ai import REPORT_MAP_AI
+
+            if settings is None:
+                settings = OnusSettings()
+
+            date_from = self.date_from or datetime.now().strftime("%Y-%m-%d")
+            date_to = self.date_to or date_from
 
             for report_key in self.get_report_keys():
-                log.info("[%s] Fetching %s ...", self.name, report_key)
+                self._current_report_key = report_key
+                spec = REPORT_MAP_AI.get(report_key)
+                if not spec:
+                    log.warning("[%s] No spec for %s", self.name, report_key)
+                    continue
+
+                params = {}
+                if spec.get("filter_key") and spec.get("type"):
+                    params[spec["filter_key"]] = spec["type"]
+                if spec.get("extra_params"):
+                    params.update(spec["extra_params"])
+                params["datePeriod"] = build_date_period(date_from, date_to)
 
                 try:
-                    records = fetch_report_raw(
-                        report_key=report_key,
-                        report_map=REPORT_MAP,
-                        date_from=self.date_from,
-                        date_to=self.date_to,
+                    records = fetch_json(
+                        endpoint=spec["endpoint"],
+                        params=params,
+                        fields=spec.get("fields"),
                         paginate=True,
                         order_by="date asc",
                         on_batch=self._dispatch,
+                        settings=settings,
                     )
-                    log.info(
-                        "[%s] %s done: %d records total",
-                        self.name,
-                        report_key,
-                        len(records) if records else 0,
-                    )
-
+                    log.info("[%s] %s: %d records", self.name, report_key, len(records) if records else 0)
                 except Exception as e:
-                    log.error("[%s] Failed to fetch %s: %s", self.name, report_key, e)
+                    log.error("[%s] Fetch %s failed: %s", self.name, report_key, e)
                     self._result.errors.append(f"fetch {report_key}: {e}")
+
+            # Risk scoring — chạy SAU KHI tất cả reports đã fetch xong
+            self._run_risk_scoring(date_from)
 
             self._result.status = "success"
 
@@ -232,12 +254,3 @@ class BaseAgent(ABC):
             self._result.duration_seconds = time.time() - start_time
 
         return self._result
-
-    # =====================
-    # Utility
-    # =====================
-
-    def get_temp_jsonl_path(self, date_str: Optional[str] = None) -> str:
-        """Trả về path file .jsonl tạm cho agent này."""
-        d = date_str or (self.date_from or datetime.now().strftime("%Y-%m-%d"))
-        return os.path.join(self.temp_dir, f"{self.name}_{d}.jsonl")

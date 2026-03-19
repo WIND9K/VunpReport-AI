@@ -6,6 +6,7 @@ Nhận risk events từ agent → áp dụng context + anomaly_x → tính final
 Flow:
     1. Agent rules trả về raw risk events (base_score)
     2. context_checker: user có feedback cũ? → modifier
+       (DB lỗi → modifier=1.0 + db_error=True → KHÔNG giảm score)
     3. anomaly_x > 5 → +1.0, > 10 → +2.0
     4. final_score = min(base_score + anomaly_bonus, 10) × context_modifier
     5. Ghi risk_events vào Aurora MySQL
@@ -33,12 +34,6 @@ def score_risk_events(
     """
     Nhận raw risk events từ agent rules → tính final score → ghi DB.
 
-    Args:
-        raw_events: list risk events từ agent (có base_score, userid, risk_type, evidence)
-        agent_type: "onchain", "pro", etc.
-        event_date: YYYY-MM-DD (default: today)
-        db: DB instance (None → dùng onuslibs default)
-
     Returns:
         list scored events (thêm final_score, context_verdict, suppressed)
     """
@@ -61,10 +56,11 @@ def score_risk_events(
     critical = sum(1 for e in scored_events if e["final_score"] >= 9.0)
     high = sum(1 for e in scored_events if 7.5 <= e["final_score"] < 9.0)
     suppressed = sum(1 for e in scored_events if e.get("suppressed", False))
+    db_errors = sum(1 for e in scored_events if e.get("context_db_error", False))
 
     log.info(
-        "[risk_scorer] %s: %d events scored (%d CRITICAL, %d HIGH, %d suppressed)",
-        agent_type, total, critical, high, suppressed,
+        "[risk_scorer] %s: %d events (%d CRITICAL, %d HIGH, %d suppressed, %d db_error)",
+        agent_type, total, critical, high, suppressed, db_errors,
     )
 
     return scored_events
@@ -94,14 +90,26 @@ def _score_one_event(
     elif anomaly_x > 5:
         anomaly_bonus = 1.0
 
-    # 3. Final score = min(base + bonus, 10) × modifier
+    # 3. Final score — xử lý db_error an toàn
     adjusted_score = min(base_score + anomaly_bonus, 10.0)
-    final_score = round(adjusted_score * ctx.modifier, 2)
+
+    if ctx.db_error:
+        # DB lỗi → KHÔNG BIẾT user có context hay không
+        # An toàn: giữ nguyên score (modifier=1.0), KHÔNG giảm
+        # Lý do: nếu user thật sự TRUE_POSITIVE mà giảm score = rủi ro
+        final_score = round(adjusted_score, 2)
+        log.warning(
+            "[risk_scorer] DB_ERROR: %s %s — giữ score=%.2f (không giảm vì không chắc context)",
+            userid, risk_type, final_score,
+        )
+    else:
+        final_score = round(adjusted_score * ctx.modifier, 2)
+
     final_score = min(final_score, 10.0)
     final_score = max(final_score, 0.0)
 
     # 4. Build scored event
-    scored = {
+    return {
         "detected_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "event_date": event_date,
         "userid": userid,
@@ -112,19 +120,11 @@ def _score_one_event(
         "anomaly_bonus": anomaly_bonus,
         "context_verdict": ctx.verdict,
         "context_modifier": ctx.modifier,
+        "context_db_error": ctx.db_error,
         "final_score": final_score,
         "evidence": evidence,
-        "suppressed": ctx.suppress_alert,  # UNDER_REVIEW → không alert
+        "suppressed": ctx.suppress_alert,
     }
-
-    if ctx.has_context:
-        log.info(
-            "[risk_scorer] %s %s: base=%.1f anomaly_x=%.1f +bonus=%.1f ×modifier=%.1f → final=%.2f (%s: %s)",
-            userid, risk_type, base_score, anomaly_x, anomaly_bonus,
-            ctx.modifier, final_score, ctx.verdict, ctx.reason,
-        )
-
-    return scored
 
 
 def _write_risk_event(scored: Dict[str, Any], db=None):
@@ -168,17 +168,7 @@ def get_today_events(
     min_score: float = 0,
     db=None,
 ) -> List[Dict[str, Any]]:
-    """
-    Đọc risk_events hôm nay từ DB. Dùng bởi Orchestrator.
-
-    Args:
-        agent_type: filter theo agent (None = tất cả)
-        event_date: YYYY-MM-DD (default: today)
-        min_score: chỉ lấy events có score >= min_score
-
-    Returns:
-        list[dict] risk events
-    """
+    """Đọc risk_events hôm nay từ DB. Dùng bởi Orchestrator."""
     import json
 
     event_date = event_date or datetime.now().strftime("%Y-%m-%d")
@@ -191,24 +181,15 @@ def get_today_events(
 
         if agent_type:
             rows = db_query(
-                """
-                SELECT * FROM risk_events
-                WHERE event_date = %s AND agent_type = %s AND risk_score >= %s
-                ORDER BY risk_score DESC
-                """,
+                "SELECT * FROM risk_events WHERE event_date = %s AND agent_type = %s AND risk_score >= %s ORDER BY risk_score DESC",
                 (event_date, agent_type, min_score),
             )
         else:
             rows = db_query(
-                """
-                SELECT * FROM risk_events
-                WHERE event_date = %s AND risk_score >= %s
-                ORDER BY risk_score DESC
-                """,
+                "SELECT * FROM risk_events WHERE event_date = %s AND risk_score >= %s ORDER BY risk_score DESC",
                 (event_date, min_score),
             )
 
-        # Parse evidence JSON
         for row in rows:
             if isinstance(row.get("evidence"), str):
                 try:

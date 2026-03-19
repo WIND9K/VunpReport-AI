@@ -10,6 +10,7 @@ Flow:
     - TRUE_POSITIVE  → 1.5 (tăng 50%)
     - UNDER_REVIEW   → 1.0 (giữ nguyên, nhưng flag suppress_alert)
     - Không có        → 1.0 (bình thường)
+    - DB lỗi          → 1.0 + db_error=True (risk_scorer sẽ KHÔNG giảm score)
 """
 
 from __future__ import annotations
@@ -30,6 +31,7 @@ class ContextResult:
     modifier: float = 1.0                # Nhân với base_score
     suppress_alert: bool = False         # True nếu UNDER_REVIEW → không alert
     valid_until: Optional[str] = None    # Ngày hết hạn context
+    db_error: bool = False               # True nếu DB lỗi → risk_scorer cẩn thận hơn
 
 
 # Modifier theo verdict — đọc từ _common.md
@@ -49,14 +51,9 @@ def check_context(
     """
     Kiểm tra user_context cho 1 userid.
 
-    Args:
-        userid: ID user cần check
-        agent_type: "onchain", "pro", "buysell", "exchange", "spot"
-        risk_type: "structuring", "velocity", "off_hours", etc.
-        db: DB instance (OnusLibs). None → tạo mới từ settings.
-
-    Returns:
-        ContextResult với modifier và thông tin context
+    Xử lý DB lỗi: trả modifier=1.0 + db_error=True.
+    Risk_scorer khi thấy db_error=True sẽ KHÔNG giảm score
+    (an toàn hơn: khi không chắc → cảnh giác, không bỏ qua).
     """
     result = ContextResult()
 
@@ -99,8 +96,9 @@ def check_context(
         )
 
     except Exception as e:
-        log.warning("[context_checker] Query failed for %s: %s", userid, e)
-        # Nếu DB lỗi → trả default (không block scoring)
+        log.warning("[context_checker] DB ERROR for %s: %s — giữ modifier=1.0, flag db_error", userid, e)
+        result.db_error = True
+        # modifier giữ 1.0 nhưng db_error=True → risk_scorer sẽ KHÔNG giảm score
 
     return result
 
@@ -109,15 +107,7 @@ def check_context_batch(
     userids_risk: list[tuple[str, str, str]],
     db=None,
 ) -> Dict[str, ContextResult]:
-    """
-    Batch check context cho nhiều (userid, agent_type, risk_type).
-
-    Args:
-        userids_risk: list of (userid, agent_type, risk_type)
-
-    Returns:
-        dict key="userid:agent_type:risk_type" → ContextResult
-    """
+    """Batch check context cho nhiều (userid, agent_type, risk_type)."""
     results = {}
     for userid, agent_type, risk_type in userids_risk:
         key = f"{userid}:{agent_type}:{risk_type}"
