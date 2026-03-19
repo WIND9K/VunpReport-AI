@@ -1,14 +1,15 @@
 """
 datalake/schema_registry.py — Enriched schema cho Parquet S3.
 
-QUAN TRỌNG — Quy tắc userid theo direction (từ OnusReport report_etl_meta.py):
-  Onchain/Pro:  SEND → userid = from.user.id | RECEIVE → userid = to.user.id
-  BuySell:      BUY  → userid = to.user.id   | SELL    → userid = from.user.id
-  Spot:         Luôn → userid = related.user.id
+QUAN TRỌNG — Tất cả fields enrich TỪ API, không hardcode:
+  - currency: lấy từ currency.internalName (API trả về "vndc" / "usdt")
+  - direction: parse từ type.internalName (chứa "send" / "receive" / etc.)
+  - userid: xác định theo direction (SEND → from, RECEIVE → to)
 
-Field `userid` = ĐỐI TƯỢNG ĐANG ĐƯỢC PHÂN TÍCH RỦI RO.
-Không cần from_user_id / to_user_id vì:
-  userid + direction + agent_type → xác định được ai gửi ai nhận.
+Quy tắc userid theo direction (từ OnusReport report_etl_meta.py):
+  Onchain/Pro:  SEND → from.user.id | RECEIVE → to.user.id
+  BuySell:      BUY  → to.user.id   | SELL    → from.user.id
+  Spot:         Luôn → related.user.id
 """
 
 from __future__ import annotations
@@ -25,9 +26,9 @@ CORE_FIELDS = [
     ("date", "str"),
     ("amount", "float"),
     ("userid", "str"),           # ĐỐI TƯỢNG PHÂN TÍCH (xác định theo direction)
-    ("transfer_type", "str"),    # type.internalName gốc
-    ("currency", "str"),         # VNDC / USDT
-    ("direction", "str"),        # SEND / RECEIVE / BUY / SELL / DEPOSIT / WITHDRAW
+    ("transfer_type", "str"),    # type.internalName gốc từ API
+    ("currency", "str"),         # currency.internalName từ API (vndc / usdt)
+    ("direction", "str"),        # parse từ type.internalName (SEND / RECEIVE / etc.)
     ("agent_type", "str"),       # onchain / pro / buysell / exchange / spot
 ]
 
@@ -35,7 +36,7 @@ EXTRA_FIELDS = {
     "onchain": [],
     "pro": [],
     "buysell": [
-        ("source", "str"),       # SYSTEM / PARTNER
+        ("source", "str"),       # SYSTEM / PARTNER (parse từ type.internalName)
     ],
     "exchange": [],
     "spot": [
@@ -54,17 +55,43 @@ def get_column_names(agent_type: str) -> List[str]:
     return [name for name, _ in get_schema(agent_type)]
 
 
+# ======== Direction parser từ type.internalName ========
+
+def _parse_direction(transfer_type: str) -> str:
+    """Parse direction từ type.internalName của API.
+
+    Ví dụ:
+      vndcacc.vndc_onchain_send       → SEND
+      usdtacc.usdt_onchain_receive    → RECEIVE
+      vndcacc.buy_via_system          → BUY
+      vndcacc.sell_via_agency         → SELL
+      vndcacc.exchange                → EXCHANGE
+    """
+    t = (transfer_type or "").lower()
+    if "send" in t:
+        return "SEND"
+    if "receive" in t:
+        return "RECEIVE"
+    if "buy" in t:
+        return "BUY"
+    if "sell" in t:
+        return "SELL"
+    if "exchange" in t:
+        return "EXCHANGE"
+    return "OTHER"
+
+
 # ======== Enrich Functions ========
 
 def enrich_onchain(record: Dict[str, Any], report_key: str) -> Dict[str, Any]:
     """
-    Quy tắc userid (từ report_etl_meta):
-      SEND    → userid = from.user.id
-      RECEIVE → userid = to.user.id
+    Enrich onchain record — tất cả field lấy từ API.
+    currency = currency.internalName | direction = parse từ type.internalName
+    userid: SEND → from.user.id | RECEIVE → to.user.id
     """
-    kind = report_key.split("/")[1]
-    currency = "VNDC" if kind.startswith("vndc") else "USDT"
-    direction = "SEND" if "send" in kind else "RECEIVE"
+    transfer_type = _nested(record, "type.internalName") or ""
+    currency = (_nested(record, "currency.internalName") or "").upper()
+    direction = _parse_direction(transfer_type)
     userid = _nested(record, "from.user.id") if direction == "SEND" else _nested(record, "to.user.id")
 
     return {
@@ -72,7 +99,7 @@ def enrich_onchain(record: Dict[str, Any], report_key: str) -> Dict[str, Any]:
         "date": record.get("date"),
         "amount": _safe_float(record.get("amount")),
         "userid": userid,
-        "transfer_type": _nested(record, "type.internalName"),
+        "transfer_type": transfer_type,
         "currency": currency,
         "direction": direction,
         "agent_type": "onchain",
@@ -80,10 +107,10 @@ def enrich_onchain(record: Dict[str, Any], report_key: str) -> Dict[str, Any]:
 
 
 def enrich_pro(record: Dict[str, Any], report_key: str) -> Dict[str, Any]:
-    """Cùng logic userid như onchain."""
-    kind = report_key.split("/")[1]
-    currency = "VNDC" if kind.startswith("vndc") else "USDT"
-    direction = "SEND" if "send" in kind else "RECEIVE"
+    """Cùng logic như onchain — currency + direction từ API."""
+    transfer_type = _nested(record, "type.internalName") or ""
+    currency = (_nested(record, "currency.internalName") or "").upper()
+    direction = _parse_direction(transfer_type)
     userid = _nested(record, "from.user.id") if direction == "SEND" else _nested(record, "to.user.id")
 
     return {
@@ -91,7 +118,7 @@ def enrich_pro(record: Dict[str, Any], report_key: str) -> Dict[str, Any]:
         "date": record.get("date"),
         "amount": _safe_float(record.get("amount")),
         "userid": userid,
-        "transfer_type": _nested(record, "type.internalName"),
+        "transfer_type": transfer_type,
         "currency": currency,
         "direction": direction,
         "agent_type": "pro",
@@ -100,22 +127,24 @@ def enrich_pro(record: Dict[str, Any], report_key: str) -> Dict[str, Any]:
 
 def enrich_buysell(record: Dict[str, Any], report_key: str) -> Dict[str, Any]:
     """
-    Quy tắc userid (từ report_etl_meta):
-      BUY  → userid = to.user.id
-      SELL → userid = from.user.id
+    BuySell: BUY → userid = to.user.id | SELL → userid = from.user.id
+    source parse từ type.internalName (agency → PARTNER, system → SYSTEM)
     """
-    kind = report_key.split("/")[1]
-    direction = "BUY" if kind.startswith("buy") else "SELL"
-    source = "PARTNER" if kind.endswith("partner") else "SYSTEM"
+    transfer_type = _nested(record, "type.internalName") or ""
+    currency = (_nested(record, "currency.internalName") or "").upper()
+    direction = _parse_direction(transfer_type)
     userid = _nested(record, "to.user.id") if direction == "BUY" else _nested(record, "from.user.id")
+
+    t_lower = transfer_type.lower()
+    source = "PARTNER" if "agency" in t_lower else "SYSTEM"
 
     return {
         "transactionNumber": record.get("transactionNumber"),
         "date": record.get("date"),
         "amount": _safe_float(record.get("amount")),
         "userid": userid,
-        "transfer_type": _nested(record, "type.internalName"),
-        "currency": "VNDC",
+        "transfer_type": transfer_type,
+        "currency": currency,
         "direction": direction,
         "agent_type": "buysell",
         "source": source,
@@ -123,16 +152,16 @@ def enrich_buysell(record: Dict[str, Any], report_key: str) -> Dict[str, Any]:
 
 
 def enrich_exchange(record: Dict[str, Any], report_key: str) -> Dict[str, Any]:
-    """Exchange: userid = from.user.id (người gửi)."""
-    kind = report_key.split("/")[1]
-    currency = "VNDC" if kind == "vndcacc" else "USDT"
+    """Exchange: userid = from.user.id."""
+    transfer_type = _nested(record, "type.internalName") or ""
+    currency = (_nested(record, "currency.internalName") or "").upper()
 
     return {
         "transactionNumber": record.get("transactionNumber"),
         "date": record.get("date"),
         "amount": _safe_float(record.get("amount")),
         "userid": _nested(record, "from.user.id"),
-        "transfer_type": _nested(record, "type.internalName"),
+        "transfer_type": transfer_type,
         "currency": currency,
         "direction": "EXCHANGE",
         "agent_type": "exchange",
@@ -140,8 +169,9 @@ def enrich_exchange(record: Dict[str, Any], report_key: str) -> Dict[str, Any]:
 
 
 def enrich_spot(record: Dict[str, Any], report_key: str) -> Dict[str, Any]:
-    """Spot: userid = related.user.id."""
+    """Spot: userid = related.user.id. Currency trực tiếp từ field 'currency'."""
     type_name = _nested(record, "type.name") or ""
+    transfer_type = _nested(record, "type.internalName") or ""
     if "Deposit" in type_name:
         direction = "DEPOSIT"
     elif "Withdraw" in type_name:
@@ -154,8 +184,8 @@ def enrich_spot(record: Dict[str, Any], report_key: str) -> Dict[str, Any]:
         "date": record.get("date"),
         "amount": _safe_float(record.get("amount")),
         "userid": _nested(record, "related.user.id"),
-        "transfer_type": _nested(record, "type.internalName"),
-        "currency": record.get("currency", ""),
+        "transfer_type": transfer_type,
+        "currency": (record.get("currency") or "").upper(),
         "direction": direction,
         "agent_type": "spot",
         "coin": record.get("currency", ""),
@@ -189,7 +219,6 @@ def apply_schema_to_df(df, agent_type: str):
         import pandas as pd
     except ImportError:
         return df
-
     schema = get_schema(agent_type)
     for col_name, col_dtype in schema:
         if col_name not in df.columns:
@@ -200,7 +229,6 @@ def apply_schema_to_df(df, agent_type: str):
                 df[col_name] = pd.to_numeric(df[col_name], errors="coerce")
         except Exception:
             pass
-
     schema_cols = [c for c, _ in schema]
     extra_cols = [c for c in df.columns if c not in schema_cols]
     return df[schema_cols + extra_cols]

@@ -1,4 +1,4 @@
-"""Test enriched fields — confirm 8 fields, no from_user_id/to_user_id"""
+"""Test enriched fields from API — currency + direction not hardcoded"""
 import sys, os, json
 sys.path.insert(0, '/home/node/learn/OnusLibs')
 sys.path.insert(0, '/home/node/learn/OnusReport-AI')
@@ -13,11 +13,10 @@ from datalake.schema_registry import enrich_batch, get_column_names
 st = OnusSettings()
 dp = build_date_period('2026-03-19', '2026-03-19')
 
-print("=== ENRICHED SCHEMA ===")
-print("Columns:", get_column_names("onchain"))
+print("Schema:", get_column_names("onchain"))
 print()
 
-for rk in ['onchain/vndc_send', 'onchain/usdt_receive']:
+for rk in ['onchain/vndc_send', 'onchain/vndc_receive', 'onchain/usdt_send', 'onchain/usdt_receive']:
     spec = REPORT_MAP_AI[rk]
     params = {}
     if spec.get('filter_key') and spec.get('type'):
@@ -25,14 +24,11 @@ for rk in ['onchain/vndc_send', 'onchain/usdt_receive']:
     params['datePeriod'] = dp
     recs = fetch_json(endpoint=spec['endpoint'], params=params, fields=spec.get('fields'), paginate=True, settings=st)
     if not recs:
+        print(f"{rk}: 0 records")
         continue
     enriched = enrich_batch('onchain', recs[:1], rk)
     e = enriched[0]
-    print(f"=== {rk} ===")
+    print(f"--- {rk} ({len(recs)} records) ---")
     for k, v in e.items():
         print(f"  {k:25s} = {v}")
-    has_from = 'from_user_id' in e
-    has_to = 'to_user_id' in e
-    print(f"  from_user_id present: {has_from} (should be False)")
-    print(f"  to_user_id present:   {has_to} (should be False)")
     print()

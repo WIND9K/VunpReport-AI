@@ -1,24 +1,26 @@
 """
 config/report_map_ai.py — Report map cho onusreport-ai.
 
-Tái sử dụng cấu trúc từ OnusReport report_map.py, giữ nguyên endpoint/filter/fields.
-Thêm thông tin cho Risk + Parquet (schema_name, diary_table, etl_meta).
+Tái sử dụng cấu trúc từ OnusReport report_map.py, giữ nguyên endpoint/filter.
+Fields mở rộng hơn OnusReport: thêm currency.internalName cho enrich chính xác từ API.
 """
 
-# ======== Endpoint và Fields — giống hệt OnusReport ========
+# ======== Endpoint và Fields ========
 ENDPOINT_TRANSFERS = "/api/transfers"
 ENDPOINT_SPOT = "/api/onus_spot_fund/transactions"
 
+# Fields cho transfers — thêm currency.internalName so với OnusReport gốc
 FIELDS_TRANSFERS = (
     "transactionNumber,date,amount,"
     "from.user.id,from.user.display,"
     "to.user.id,to.user.display,"
-    "type.internalName"
+    "type.internalName,"
+    "currency.internalName"
 )
 
 FIELDS_SPOT = (
     "date,transactionNumber,related.user.id,related.user.display,"
-    "type.name,amount,currency,description,authorizationStatus"
+    "type.name,type.internalName,amount,currency,description,authorizationStatus"
 )
 
 
@@ -107,7 +109,7 @@ REPORT_MAP_AI = {
         "extra_params": {"chargedBack": "false"},
     },
 
-    # --- EXCHANGE (dùng chung endpoint transfers) ---
+    # --- EXCHANGE ---
     "exchange/vndcacc": {
         "endpoint": ENDPOINT_TRANSFERS,
         "filter_key": "transferFilters",
@@ -121,7 +123,7 @@ REPORT_MAP_AI = {
         "fields": FIELDS_TRANSFERS,
     },
 
-    # --- SPOT (1 report) ---
+    # --- SPOT ---
     "spot/daily": {
         "endpoint": ENDPOINT_SPOT,
         "fields": FIELDS_SPOT,
