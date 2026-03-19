@@ -1,0 +1,126 @@
+# settings.yaml — Cấu hình onusreport-ai v5.0
+# Rule Analyzer Skill (Lớp 2) sẽ tự gợi ý thay đổi file này.
+
+# ======== General ========
+general:
+  temp_dir: "/tmp"
+  s3_bucket: "onus-datalake"
+  s3_region: "ap-southeast-1"
+  agent_timeout_seconds: 300
+
+# ======== Schedule ========
+schedule:
+  agents_cron: "0 3 * * *"        # 3:00 AM hàng ngày
+  finalize_cron: "0 5 * * *"      # 5:00 AM convert Parquet + upload S3
+  orchestrator_cron: "0 6 * * *"  # 6:00 AM daily briefing
+  rule_analyzer_cron: "0 8 1 * *" # 8:00 AM ngày 1 hàng tháng
+
+# ======== Risk Rules ========
+risk_rules:
+  # -- Onchain Agent --
+  onchain:
+    structuring:
+      enabled: true
+      min_transactions: 5
+      amount_tolerance_pct: 10
+      time_window_hours: 2
+      exclude_groups: []
+    velocity:
+      enabled: true
+      threshold_per_hour: 10
+      lookback_days: 30
+    off_hours:
+      enabled: true
+      time_window: "01:00-04:00"
+      min_amount_vs_avg: 2.0
+      exclude_groups: []
+    new_large:
+      enabled: true
+      no_history_days: 90
+      min_amount_vndc: 100000000
+      min_amount_usdt: 5000
+
+  # -- BuySell Agent --
+  buysell:
+    wash_trading:
+      enabled: true
+      buy_sell_gap_minutes: 30
+      amount_tolerance_pct: 5
+    rp1_repeat:
+      enabled: true
+      min_occurrences_per_month: 3
+    listed_zero_spike:
+      enabled: true
+      volume_vs_avg_threshold: 3.0
+
+  # -- Exchange Agent --
+  exchange:
+    rapid_swap:
+      enabled: true
+      buy_sell_gap_minutes: 5
+      same_coin: true
+    pump:
+      enabled: true
+      volume_vs_avg_30d: 5.0
+    off_hours_large:
+      enabled: true
+      time_window: "01:00-04:00"
+      min_amount_vs_avg: 3.0
+
+  # -- Pro Agent --
+  pro:
+    volume_spike:
+      enabled: true
+      volume_vs_avg_30d: 5.0
+    cross_agent_layering:
+      enabled: true
+      bonus_score: 3.0
+
+  # -- Spot Agent --
+  spot:
+    order_layering:
+      enabled: true
+      min_orders: 5
+      price_tolerance_pct: 0.5
+      cancel_rate_threshold: 80
+      time_window_seconds: 60
+    quote_stuffing:
+      enabled: true
+      orders_per_minute_threshold: 20
+    cross_market_pump:
+      enabled: true
+      requires_onchain_same_day: true
+    abnormal_fill_rate:
+      enabled: true
+      fill_rate_threshold_pct: 10
+      lookback_days: 30
+
+# ======== Alert Thresholds ========
+alerts:
+  critical_score: 9.0    # Telegram CRITICAL
+  high_score: 7.5        # Slack HIGH
+  medium_score: 5.0      # Email MEDIUM
+  low_score: 3.0         # Log only
+
+# ======== Cross-agent Scoring ========
+cross_agent:
+  same_user_2_agents: 2.0
+  same_user_3_plus_agents: 3.5
+  onchain_spot_same_coin: 2.5
+  new_user_high_score: 1.5
+
+# ======== Learning Loop ========
+learning:
+  layer1_context_valid_days: 90
+  layer2_analysis_interval_days: 30
+  layer2_fp_threshold_pct: 60
+  false_positive_score_multiplier: 0.2
+  true_positive_score_multiplier: 1.5
+
+# ======== LLM ========
+llm:
+  orchestrator_model: "claude-sonnet-4-20250514"
+  specialist_model: "gemini-2.0-flash"
+  local_model: "qwen2.5:7b"
+  max_context_entries: 100
+  max_memory_entries: 50

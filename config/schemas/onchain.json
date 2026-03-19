@@ -1,0 +1,16 @@
+{
+  "agent": "onchain",
+  "description": "Schema for onchain transfers (vndc_send/receive, usdt_send/receive)",
+  "columns": [
+    {"name": "transactionNumber", "type": "string"},
+    {"name": "date", "type": "string"},
+    {"name": "amount", "type": "float"},
+    {"name": "from_user_id", "type": "string"},
+    {"name": "from_user_display", "type": "string"},
+    {"name": "to_user_id", "type": "string"},
+    {"name": "to_user_display", "type": "string"},
+    {"name": "type_internalName", "type": "string"},
+    {"name": "currency", "type": "string"},
+    {"name": "direction", "type": "string"}
+  ]
+}

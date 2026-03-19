@@ -1,0 +1,32 @@
+# Secrets — KHÔNG BAO GIỜ commit
+.env
+.env.*
+!.env.example
+secrets/
+*.key
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Data files
+*.jsonl
+*.parquet
+*.csv
+files/
+logs/
+/tmp/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

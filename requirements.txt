@@ -1,0 +1,23 @@
+# onusreport-ai v5.0 — Requirements
+# Core
+onuslibs>=3.1
+pymysql>=1.1.0
+python-dotenv>=1.0.0
+pyyaml>=6.0
+
+# Data Lake
+pandas>=2.0.0
+pyarrow>=14.0.0
+boto3>=1.34.0
+duckdb>=0.10.0
+
+# LLM
+anthropic>=0.40.0
+google-generativeai>=0.8.0
+
+# Alerts
+python-telegram-bot>=21.0
+requests>=2.31.0
+
+# Utils
+loguru>=0.7.0
