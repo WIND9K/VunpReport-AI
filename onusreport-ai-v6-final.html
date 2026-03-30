@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>onusreport-ai — Kế Hoạch Triển Khai v6</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Lora:ital,wght@0,400;0,500;1,400&display=swap');
+:root{
+  --ink:#0d1117;--ink2:#161b22;--ink3:#21262d;
+  --text:#c9d1d9;--text2:#8b949e;--text3:#6e7681;
+  --sky:#58a6ff;--sky-d:#1f6feb;--sky-l:rgba(88,166,255,.08);
+  --mint:#3fb950;--mint-l:rgba(63,185,80,.08);
+  --amber:#e3b341;--amber-l:rgba(227,179,65,.08);
+  --rose:#f85149;--rose-l:rgba(248,81,73,.08);
+  --violet:#bc8cff;--violet-l:rgba(188,140,255,.08);
+  --teal:#39d0c8;--teal-l:rgba(57,208,200,.08);
+  --orange:#f0883e;--orange-l:rgba(240,136,62,.08);
+  --border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.12);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Lora',Georgia,serif;background:var(--ink);color:var(--text);font-size:13px;line-height:1.7}
+
+/* COVER */
+.cover{min-height:100vh;display:flex;flex-direction:column;justify-content:flex-end;padding:72px 80px;position:relative;overflow:hidden}
+.cover-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(63,185,80,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(63,185,80,.04) 1px,transparent 1px);background-size:48px 48px}
+.cover-glow{position:absolute;top:-200px;right:-200px;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(63,185,80,.15) 0%,transparent 65%)}
+.cover-glow2{position:absolute;bottom:-100px;left:-100px;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(57,208,200,.1) 0%,transparent 65%)}
+.cv-ver{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mint);letter-spacing:2px;margin-bottom:32px;position:relative;display:flex;align-items:center;gap:10px}
+.cv-dot{width:6px;height:6px;border-radius:50%;background:var(--mint);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.cv-title{font-family:'Syne',sans-serif;font-size:56px;font-weight:800;line-height:1;color:#fff;position:relative;margin-bottom:16px}
+.cv-title em{color:var(--mint);font-style:normal}
+.cv-sub{font-size:16px;color:var(--text2);margin-bottom:48px;position:relative;max-width:560px;font-style:italic}
+.cv-pills{display:flex;gap:10px;flex-wrap:wrap;position:relative;margin-bottom:56px}
+.pill{padding:6px 16px;border-radius:99px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;letter-spacing:.5px;border:1px solid}
+.pill-sky{color:var(--sky);border-color:rgba(88,166,255,.3);background:var(--sky-l)}
+.pill-mint{color:var(--mint);border-color:rgba(63,185,80,.3);background:var(--mint-l)}
+.pill-amber{color:var(--amber);border-color:rgba(227,179,65,.3);background:var(--amber-l)}
+.pill-violet{color:var(--violet);border-color:rgba(188,140,255,.3);background:var(--violet-l)}
+.pill-teal{color:var(--teal);border-color:rgba(57,208,200,.3);background:var(--teal-l)}
+.pill-rose{color:var(--rose);border-color:rgba(248,81,73,.3);background:var(--rose-l)}
+.cv-stats{display:flex;gap:0;position:relative;border:1px solid var(--border2);border-radius:10px;overflow:hidden;width:fit-content}
+.cv-stat{padding:20px 36px;border-right:1px solid var(--border)}
+.cv-stat:last-child{border-right:none}
+.cv-stat-val{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;color:#fff;line-height:1}
+.cv-stat-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text3);margin-top:5px;letter-spacing:1px;text-transform:uppercase}
+
+/* PAGE */
+.page{max-width:980px;margin:0 auto;padding:72px 64px}
+.sec{margin-bottom:64px}
+.pb{padding-top:72px}
+hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+
+/* SECTION HEADER */
+.sh{margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid var(--border)}
+.sh-top{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.snum{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:1px}
+.sdot{width:4px;height:4px;border-radius:50%;background:var(--mint)}
+.stag{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--mint);letter-spacing:2px;text-transform:uppercase}
+.st{font-family:'Syne',sans-serif;font-size:26px;font-weight:700;color:#fff;line-height:1.2}
+.ss{font-size:12px;color:var(--text2);margin-top:6px;font-style:italic}
+
+/* CALLOUT */
+.cl{border-radius:8px;padding:16px 20px;margin-bottom:14px;display:flex;gap:14px;align-items:flex-start;border:1px solid}
+.cl-sky{background:var(--sky-l);border-color:rgba(88,166,255,.2)}
+.cl-mint{background:var(--mint-l);border-color:rgba(63,185,80,.2)}
+.cl-amber{background:var(--amber-l);border-color:rgba(227,179,65,.2)}
+.cl-violet{background:var(--violet-l);border-color:rgba(188,140,255,.2)}
+.cl-teal{background:var(--teal-l);border-color:rgba(57,208,200,.2)}
+.cl-rose{background:var(--rose-l);border-color:rgba(248,81,73,.2)}
+.cl-orange{background:var(--orange-l);border-color:rgba(240,136,62,.2)}
+.cl-ico{font-size:17px;flex-shrink:0;margin-top:1px}
+.cl-body{font-size:12px;color:var(--text);line-height:1.7}
+.cl-title{font-family:'Syne',sans-serif;font-weight:700;color:#fff;margin-bottom:4px;font-size:13px}
+
+/* TABLE */
+.tw{border-radius:8px;overflow:hidden;border:1px solid var(--border);margin-bottom:16px}
+table{width:100%;border-collapse:collapse}
+thead tr{background:var(--ink3)}
+th{padding:10px 14px;text-align:left;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:500;color:var(--text2);letter-spacing:1px;text-transform:uppercase}
+tbody tr{border-bottom:1px solid var(--border)}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:rgba(255,255,255,.015)}
+td{padding:10px 14px;font-size:12px;color:var(--text);vertical-align:top}
+.tb{font-weight:600;color:#fff;font-family:'Syne',sans-serif;font-size:12px}
+
+/* BADGE */
+.b{display:inline-block;padding:2px 8px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:500;letter-spacing:.3px;border:1px solid}
+.b-mint{color:var(--mint);border-color:rgba(63,185,80,.3);background:var(--mint-l)}
+.b-sky{color:var(--sky);border-color:rgba(88,166,255,.3);background:var(--sky-l)}
+.b-amber{color:var(--amber);border-color:rgba(227,179,65,.3);background:var(--amber-l)}
+.b-rose{color:var(--rose);border-color:rgba(248,81,73,.3);background:var(--rose-l)}
+.b-violet{color:var(--violet);border-color:rgba(188,140,255,.3);background:var(--violet-l)}
+.b-teal{color:var(--teal);border-color:rgba(57,208,200,.3);background:var(--teal-l)}
+.b-slate{color:var(--text2);border-color:var(--border);background:rgba(255,255,255,.04)}
+.b-orange{color:var(--orange);border-color:rgba(240,136,62,.3);background:var(--orange-l)}
+
+/* GRID CARDS */
+.cg{display:grid;gap:12px;margin-bottom:16px}
+.cg-3{grid-template-columns:repeat(3,1fr)}
+.cg-2{grid-template-columns:repeat(2,1fr)}
+.cg-4{grid-template-columns:repeat(4,1fr)}
+.card{border-radius:8px;padding:18px;border:1px solid var(--border);background:var(--ink2)}
+.card-ico{font-size:22px;margin-bottom:10px}
+.card-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#fff;margin-bottom:5px}
+.card-desc{font-size:11px;color:var(--text2);line-height:1.6}
+.c-sky{border-color:rgba(88,166,255,.2);background:rgba(88,166,255,.04)}
+.c-mint{border-color:rgba(63,185,80,.2);background:rgba(63,185,80,.04)}
+.c-teal{border-color:rgba(57,208,200,.2);background:rgba(57,208,200,.04)}
+.c-violet{border-color:rgba(188,140,255,.2);background:rgba(188,140,255,.04)}
+.c-amber{border-color:rgba(227,179,65,.2);background:rgba(227,179,65,.04)}
+.c-rose{border-color:rgba(248,81,73,.2);background:rgba(248,81,73,.04)}
+
+/* CODE */
+.code{background:var(--ink2);border:1px solid var(--border);border-radius:8px;padding:18px 20px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.9;color:var(--text);margin-bottom:14px;overflow-x:auto;white-space:pre}
+.cc{color:var(--text3)} .ck{color:var(--sky)} .cs{color:var(--mint)} .cv{color:var(--amber)} .ch{color:#fff;font-weight:600} .cm{color:var(--violet)} .co{color:var(--orange)} .ct{color:var(--teal)}
+
+/* SUBHEADING */
+.sub-h{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:6px;margin:20px 0 10px}
+
+/* CHECKLIST */
+.chk-group{margin-bottom:16px}
+.chk-group-title{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.chk-list{list-style:none}
+.chk-list li{display:flex;gap:10px;align-items:flex-start;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2)}
+.chk-list li:last-child{border-bottom:none}
+.chk-box{width:14px;height:14px;border:1px solid var(--border2);border-radius:3px;flex-shrink:0;margin-top:2px;background:var(--ink3)}
+.chk-critical .chk-box{border-color:var(--rose)}
+.chk-label{flex:1;line-height:1.5}
+.chk-note{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text3);margin-top:2px}
+
+/* ACCEPTANCE CRITERIA */
+.ac-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.ac-item{background:var(--ink3);border:1px solid var(--border);border-radius:6px;padding:12px 14px}
+.ac-item-title{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:1px;margin-bottom:5px;text-transform:uppercase}
+.ac-item-val{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#fff}
+.ac-item-desc{font-size:11px;color:var(--text2);margin-top:3px}
+
+/* SCORE TABLE */
+.risk-high{background:rgba(248,81,73,.04)}
+.risk-med{background:rgba(227,179,65,.04)}
+.risk-low{background:rgba(63,185,80,.04)}
+
+/* MONITOR */
+.mon-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.mon-card{background:var(--ink2);border:1px solid var(--border);border-radius:8px;padding:16px}
+.mon-time{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--sky);letter-spacing:1px;margin-bottom:6px}
+.mon-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:#fff;margin-bottom:8px}
+.mon-items{list-style:none}
+.mon-items li{font-size:11px;color:var(--text2);padding:2px 0;display:flex;gap:5px}
+.mon-items li::before{content:'·';color:var(--mint);flex-shrink:0}
+
+/* ROLLBACK TIMELINE */
+.tl{position:relative;padding-left:36px}
+.tl::before{content:'';position:absolute;left:12px;top:16px;bottom:16px;width:1px;background:linear-gradient(to bottom,var(--mint),var(--teal),var(--border))}
+.tli{position:relative;margin-bottom:16px}
+.tld{position:absolute;left:-29px;top:14px;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#fff;font-family:'JetBrains Mono',monospace}
+.tlc{background:var(--ink2);border:1px solid var(--border);border-radius:8px;padding:16px 18px}
+.tlw{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.tlt{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#fff;margin-bottom:10px}
+.tllist{list-style:none}
+.tllist li{font-size:12px;color:var(--text2);padding:3px 0;border-bottom:1px solid var(--border);display:flex;gap:8px;line-height:1.6}
+.tllist li:last-child{border-bottom:none}
+.tllist li::before{content:'-->';color:var(--mint);font-family:'JetBrains Mono',monospace;font-size:9px;flex-shrink:0;margin-top:3px}
+
+/* SUMBOX */
+.sumbox{background:var(--ink2);border:1px solid var(--border2);border-radius:12px;padding:32px;margin-bottom:16px}
+.sumbox-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:#fff;text-align:center;margin-bottom:24px}
+.sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.sg-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px}
+.sg-text{font-size:12px;color:var(--text);line-height:1.8}
+
+/* AGENT FLOW BOXES */
+.agent-flow{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px}
+.af-box{border:1px solid var(--border);border-radius:8px;padding:14px 10px;text-align:center;background:var(--ink2);position:relative}
+.af-num{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px}
+.af-name{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:#fff;margin-bottom:6px}
+.af-desc{font-size:10px;color:var(--text2);line-height:1.5}
+.af-phase{position:absolute;top:6px;right:6px}
+
+.af-onchain{border-color:rgba(63,185,80,.3);background:rgba(63,185,80,.04)}
+.af-pro{border-color:rgba(88,166,255,.3);background:rgba(88,166,255,.04)}
+.af-buysell{border-color:rgba(227,179,65,.3);background:rgba(227,179,65,.04)}
+.af-exchange{border-color:rgba(188,140,255,.3);background:rgba(188,140,255,.04)}
+.af-spot{border-color:rgba(248,81,73,.3);background:rgba(248,81,73,.04)}
+
+/* RUNNER PROGRESS */
+.rp{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:10px 14px;background:var(--ink2);border:1px solid var(--border);border-radius:6px}
+.rp-phase{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text3);width:80px;flex-shrink:0}
+.rp-arrow{color:var(--text3);font-size:10px}
+.rp-agents{display:flex;gap:5px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-grid"></div>
+  <div class="cover-glow"></div>
+  <div class="cover-glow2"></div>
+  <div class="cv-ver"><div class="cv-dot"></div>DEPLOYMENT PLAN — onusreport-ai v6.0 · confirmed facts only</div>
+  <div class="cv-title">Kế Hoạch<br><em>Triển Khai</em></div>
+  <div class="cv-sub">Multi-Agent ETL + Real-time Risk AI · ETL & S3 đã có sẵn · Dựa trên dữ liệu thực, không suy đoán</div>
+  <div class="cv-pills">
+    <span class="pill pill-mint">5 Agents Độc Lập</span>
+    <span class="pill pill-sky">BaseAgent + asyncio</span>
+    <span class="pill pill-teal">Real-time Risk Per Batch</span>
+    <span class="pill pill-amber">Claude Sonnet + Gemini Flash</span>
+    <span class="pill pill-violet">OpenClaw Skills</span>
+    <span class="pill pill-rose">Shadow Mode → Go-Live</span>
+  </div>
+  <div class="cv-stats">
+    <div class="cv-stat"><div class="cv-stat-val">7</div><div class="cv-stat-lbl">Phases</div></div>
+    <div class="cv-stat"><div class="cv-stat-val">~45</div><div class="cv-stat-lbl">Ngày build</div></div>
+    <div class="cv-stat"><div class="cv-stat-val">5</div><div class="cv-stat-lbl">Agents</div></div>
+    <div class="cv-stat"><div class="cv-stat-val">2</div><div class="cv-stat-lbl">Risk layers</div></div>
+    <div class="cv-stat"><div class="cv-stat-val">~$18</div><div class="cv-stat-lbl">Ops/tháng</div></div>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- S1: CONFIRMED FACTS -->
+<div class="sec">
+  <div class="sh">
+    <div class="sh-top"><span class="snum">01</span><span class="sdot"></span><span class="stag">CONFIRMED FACTS — v6 CHANGES vs v5</span></div>
+    <div class="st">4 Điểm Đã Xác Nhận — Sửa So Với v5</div>
+    <div class="ss">Toàn bộ nội dung còn lại giữ nguyên từ v5</div>
+  </div>
+
+  <div class="cg cg-2">
+    <div class="cl cl-mint"><div class="cl-ico">✅</div><div class="cl-body">
+      <div class="cl-title">Exchange → chỉ vu_exchange (không spot_diary)</div>
+      v5 ghi "ETL (vu_exchange + spot_diary)" — SAI. v6 sửa: Exchange agent fetch API → ghi chỉ <code>vu_exchange</code>. spot_diary là nguồn riêng biệt, ETL đã chạy qua onuslibs.
+    </div></div>
+    <div class="cl cl-mint"><div class="cl-ico">✅</div><div class="cl-body">
+      <div class="cl-title">spot_diary = order-level, ETL đã có — wrap only</div>
+      v5 gọi là "spot_order_diary" và cần tạo mới — SAI. v6 sửa: <code>spot_diary</code> đã tồn tại, là order-level (id_order, side, price, qty, fill_rate...), ETL dùng onuslibs method. Phase 6 chỉ wrap vào BaseAgent, ~2 ngày.
+    </div></div>
+    <div class="cl cl-sky"><div class="cl-ico">🤖</div><div class="cl-body">
+      <div class="cl-title">Bỏ Ollama hoàn toàn — Claude Sonnet + Gemini Flash</div>
+      v5 cài Ollama + qwen2.5:7b cho local tasks. v6 bỏ hoàn toàn. LLM stack: <strong>Claude Sonnet</strong> (alert narrative, daily briefing, Telegram query) + <strong>Gemini Flash</strong> (borderline scoring, rule analyzer).
+    </div></div>
+    <div class="cl cl-amber"><div class="cl-ico">⏳</div><div class="cl-body">
+      <div class="cl-title">Risk AI tables — defer sau EDA (Phase 5+)</div>
+      v5 tạo user_context, ai_alert_log, ai_daily_summary, risk_user_profile ngay Phase 2. v6 defer: chỉ tạo <code>risk_events</code> ngay từ đầu. Các tables học sẽ thiết kế sau Phase 5 EDA dựa trên data thực. <code>/confirm</code> vẫn hoạt động từ Phase 1 — ghi verdict vào risk_events.
+    </div></div>
+  </div>
+</div>
+
+<!-- S2: MULTI-AGENT ARCHITECTURE -->
+<div class="sec">
+  <div class="sh">
+    <div class="sh-top"><span class="snum">02</span><span class="sdot"></span><span class="stag">MULTI-AGENT ARCHITECTURE</span></div>
+    <div class="st">Kiến Trúc Multi-Agent — 5 Agents Độc Lập</div>
+    <div class="ss">Mỗi agent kế thừa BaseAgent, chạy asyncio.gather 3 handlers song song · Fail 1 không ảnh hưởng 4 còn lại</div>
+  </div>
+
+  <div class="agent-flow">
+    <div class="af-box af-onchain">
+      <div class="af-phase"><span class="b b-mint">Phase 2</span></div>
+      <div class="af-num">Agent 1</div>
+      <div class="af-name">Onchain</div>
+      <div class="af-desc">onchain_diary<br>4 rules: structuring, velocity, off_hours, new_large</div>
+    </div>
+    <div class="af-box af-pro">
+      <div class="af-phase"><span class="b b-sky">Phase 3</span></div>
+      <div class="af-num">Agent 2</div>
+      <div class="af-name">Pro</div>
+      <div class="af-desc">pro_diary<br>4 sub-reports offchain + cross-agent check</div>
+    </div>
+    <div class="af-box af-buysell">
+      <div class="af-phase"><span class="b b-amber">Phase 3</span></div>
+      <div class="af-num">Agent 3</div>
+      <div class="af-name">BuySell</div>
+      <div class="af-desc">buy_sell_diary<br>wash_trading, rp1 repeat DuckDB</div>
+    </div>
+    <div class="af-box af-exchange">
+      <div class="af-phase"><span class="b b-violet">Phase 4</span></div>
+      <div class="af-num">Agent 4</div>
+      <div class="af-name">Exchange</div>
+      <div class="af-desc">vu_exchange only<br>API · rapid_swap, off_hours_large</div>
+    </div>
+    <div class="af-box af-spot">
+      <div class="af-phase"><span class="b b-rose">Phase 6</span></div>
+      <div class="af-num">Agent 5</div>
+      <div class="af-name">Spot</div>
+      <div class="af-desc">spot_diary (wrap)<br>layering, quote_stuffing, fill_rate</div>
+    </div>
+  </div>
+
+  <div class="sub-h">🏗️ Repo Structure</div>
+  <div class="code">onusreport-ai/
+├── agents/
+│   ├── <span class="ch">base_agent.py</span>          <span class="cc"># Abstract: fetch() → asyncio.gather 3 handlers</span>
+│   ├── onchain_agent.py
+│   ├── pro_agent.py
+│   ├── buysell_agent.py
+│   ├── exchange_agent.py
+│   └── spot_agent.py
+├── etl/                       <span class="cc"># Copy từ onusreport — không sửa logic</span>
+│   ├── transform.py
+│   ├── etl_meta.py
+│   ├── report_map.py
+│   └── buysell_filters.py
+├── risk/
+│   ├── onchain_risk.py        <span class="cc"># Rules per agent group</span>
+│   ├── pro_risk.py
+│   ├── buysell_risk.py
+│   ├── exchange_risk.py
+│   ├── spot_risk.py
+│   ├── <span class="ch">risk_scorer.py</span>         <span class="cc"># Tổng hợp score 0–10, anomaly_x DuckDB</span>
+│   ├── <span class="ch">end_of_day_rules.py</span>    <span class="cc"># Cross-agent, cross-market (sau finalize)</span>
+│   └── llm_enricher.py        <span class="cc"># Claude Sonnet + Gemini Flash async</span>
+├── datalake/
+│   ├── <span class="ch">parquet_writer.py</span>      <span class="cc"># append_batch() + finalize_day() → S3</span>
+│   ├── <span class="ch">duckdb_reader.py</span>       <span class="cc"># get_user_history(userid, group, days=30)</span>
+│   └── schema_registry.py     <span class="cc"># Fixed schema 5 agents, fill NULL cho field thiếu</span>
+├── learning/
+│   ├── feedback_handler.py    <span class="cc"># Parse /confirm → update risk_events.verdict</span>
+│   └── rule_analyzer.py       <span class="cc"># SQL phân tích FP rate (implement Phase 5+)</span>
+├── openclaw_skills/
+│   ├── <span class="ch">etl_runner_skill.py</span>    <span class="cc"># cron 03:00 — asyncio.gather N agents</span>
+│   ├── finalize_skill.py      <span class="cc"># cron 05:00</span>
+│   ├── confirm_handler_skill.py
+│   ├── daily_briefing_skill.py
+│   ├── query_user_skill.py
+│   ├── risk_query_skill.py
+│   └── rule_analyzer_skill.py <span class="cc"># cron monthly (Phase 5+)</span>
+├── alerts/
+│   ├── telegram_bot.py
+│   ├── slack_webhook.py
+│   └── email_sender.py
+├── scheduler/
+│   └── job_scheduler.py       <span class="cc"># APScheduler fallback</span>
+└── config/
+    ├── settings.yaml           <span class="cc"># .gitignore ngay</span>
+    └── schemas/               <span class="cc"># JSON schema 5 groups</span></div>
+
+  <div class="sub-h">🔧 BaseAgent — Interface chuẩn cho tất cả 5 agents</div>
+  <div class="code"><span class="cc"># agents/base_agent.py</span>
+<span class="ck">import</span> asyncio
+<span class="ck">from</span> abc <span class="ck">import</span> ABC, abstractmethod
+
+<span class="ck">class</span> <span class="ch">BaseAgent</span>(ABC):
+    <span class="cm">def</span> <span class="ch">__init__</span>(self, date, config):
+        self.date = date
+        self.config = config
+        self.session_buffer = {}          <span class="cc"># in-memory per-run risk buffer</span>
+
+    <span class="cm">@abstractmethod</span>
+    <span class="ck">async</span> <span class="cm">def</span> <span class="ch">fetch</span>(self) -> list[dict]:
+        <span class="cs">"""Fetch raw data từ onuslibs — implement trong mỗi agent"""</span>
+        ...
+
+    <span class="ck">async</span> <span class="cm">def</span> <span class="ch">run</span>(self):
+        rows = <span class="ck">await</span> self.fetch()          <span class="cc"># onuslibs API call</span>
+        <span class="ck">await</span> asyncio.gather(
+            self._etl_handler(rows),      <span class="cc"># → Aurora diary table</span>
+            self._parquet_handler(rows),  <span class="cc"># → /tmp/{group}_{date}.jsonl</span>
+            self._risk_handler(rows),     <span class="cc"># → risk_events nếu score ≥ threshold</span>
+        )
+
+    <span class="ck">async</span> <span class="cm">def</span> <span class="ch">_etl_handler</span>(self, rows):
+        from etl.transform import enrich, normalize, aggregate
+        data = aggregate(normalize(enrich(rows)))
+        from core.db import bulk_upsert
+        bulk_upsert(self.diary_table, data)
+
+    <span class="ck">async</span> <span class="cm">def</span> <span class="ch">_parquet_handler</span>(self, rows):
+        from datalake.parquet_writer import ParquetWriter
+        writer = ParquetWriter()
+        writer.append_batch(self.group_name, rows)
+
+    <span class="ck">async</span> <span class="cm">def</span> <span class="ch">_risk_handler</span>(self, rows):
+        <span class="cc"># Process per batch, per userid — real-time risk in-memory</span>
+        <span class="ck">for</span> userid, user_rows <span class="ck">in</span> group_by(rows, <span class="cs">"userid"</span>):
+            <span class="ck">await</span> self._process_batch(userid, user_rows)
+
+    <span class="ck">async</span> <span class="cm">def</span> <span class="ch">_process_batch</span>(self, userid, user_rows):
+        score, rules = risk_rules.check(userid, user_rows, self.session_buffer)
+        <span class="ck">if</span> score >= THRESHOLD_MEDIUM:
+            case_id = risk_events.create(
+                userid=userid, agent_type=self.group_name,
+                score=score, rules_triggered=rules,
+                raw_evidence=user_rows, detection_layer=<span class="cs">"realtime"</span>
+            )
+            <span class="ck">if</span> score >= THRESHOLD_HIGH:
+                <span class="ck">await</span> telegram.alert(case_id, userid, score, rules)
+            <span class="ck">elif</span> score >= THRESHOLD_CRITICAL:
+                <span class="ck">await</span> telegram.critical(case_id, userid, score, rules)
+                <span class="ck">await</span> slack.alert(case_id, score, rules)</div>
+
+  <div class="sub-h">⚡ agent_runner_skill.py — Progressive từ 1 → 5 agents</div>
+
+  <div class="rp">
+    <div class="rp-phase">Phase 2</div>
+    <div class="rp-arrow">→</div>
+    <div class="rp-agents">
+      <span class="b b-mint">onchain</span>
+    </div>
+  </div>
+  <div class="rp">
+    <div class="rp-phase">Phase 3</div>
+    <div class="rp-arrow">→</div>
+    <div class="rp-agents">
+      <span class="b b-mint">onchain</span>
+      <span class="b b-sky">pro</span>
+      <span class="b b-amber">buysell</span>
+    </div>
+  </div>
+  <div class="rp">
+    <div class="rp-phase">Phase 5</div>
+    <div class="rp-arrow">→</div>
+    <div class="rp-agents">
+      <span class="b b-mint">onchain</span>
+      <span class="b b-sky">pro</span>
+      <span class="b b-amber">buysell</span>
+      <span class="b b-violet">exchange</span>
+    </div>
+  </div>
+  <div class="rp">
+    <div class="rp-phase">Phase 6</div>
+    <div class="rp-arrow">→</div>
+    <div class="rp-agents">
+      <span class="b b-mint">onchain</span>
+      <span class="b b-sky">pro</span>
+      <span class="b b-amber">buysell</span>
+      <span class="b b-violet">exchange</span>
+      <span class="b b-rose">spot</span>
+    </div>
+  </div>
+
+  <div class="code"><span class="cc"># openclaw_skills/etl_runner_skill.py — ví dụ Phase 6 (5 agents)</span>
+<span class="ck">async</span> <span class="cm">def</span> <span class="ch">run_all_agents</span>(date):
+    results = <span class="ck">await</span> asyncio.gather(
+        OnchainAgent(date, config).run(),
+        ProAgent(date, config).run(),
+        BuySellAgent(date, config).run(),
+        ExchangeAgent(date, config).run(),   <span class="cc"># API → chỉ vu_exchange</span>
+        SpotAgent(date, config).run(),       <span class="cc"># onuslibs method → spot_diary (wrap)</span>
+        return_exceptions=<span class="cv">True</span>             <span class="cc"># Fail 1 không dừng các agent còn lại</span>
+    )
+    <span class="cc"># Báo kết quả Telegram</span>
+    ok = sum(<span class="cv">1</span> <span class="ck">for</span> r <span class="ck">in</span> results <span class="ck">if not</span> isinstance(r, Exception))
+    fail = [results[i] <span class="ck">for</span> i, r <span class="ck">in</span> enumerate(results) <span class="ck">if</span> isinstance(r, Exception)]
+    await telegram.send(f<span class="cs">"✅ {ok}/5 agents OK · ⚠️ {len(fail)} failed: {fail}"</span>)</div>
+
+  <div class="sub-h">📊 Daily Flow — 03h → 06h sáng</div>
+  <div class="code"><span class="cc"># 03:00 — etl_runner_skill.py (OpenClaw cron)</span>
+await run_all_agents(date=yesterday)      <span class="cc"># 5 agents asyncio.gather</span>
+
+<span class="cc"># 05:00 — finalize_skill.py</span>
+<span class="ck">for</span> group <span class="ck">in</span> [<span class="cs">'onchain','pro','buysell','exchange','spot'</span>]:
+    parquet_writer.finalize_day(group)    <span class="cc"># /tmp/*.jsonl → .parquet → S3 raw/{group}/Y/M/D/</span>
+end_of_day_rules.run(yesterday)          <span class="cc"># cross-agent, cross-market (query risk_events đã ghi)</span>
+
+<span class="cc"># 06:00 — daily_briefing_skill.py (sau Phase 4)</span>
+summary = duckdb_reader.get_daily_summary(yesterday)
+briefing = claude_sonnet.generate(prompt=summary)  <span class="cc"># top cases + patterns</span>
+await telegram.send(briefing)</div>
+
+  <div class="sub-h">🗄️ Tables — Đã có & Tạo mới</div>
+  <div class="tw"><table>
+    <thead><tr><th>Table</th><th>Agent</th><th>Status</th><th>v6 note</th></tr></thead>
+    <tbody>
+      <tr><td class="tb">onchain_diary</td><td><span class="b b-mint">Onchain</span></td><td><span class="b b-mint">✅ có sẵn</span></td><td>Không thay đổi</td></tr>
+      <tr><td class="tb">pro_diary</td><td><span class="b b-sky">Pro</span></td><td><span class="b b-mint">✅ có sẵn</span></td><td>Không thay đổi</td></tr>
+      <tr><td class="tb">buy_sell_diary</td><td><span class="b b-amber">BuySell</span></td><td><span class="b b-mint">✅ có sẵn</span></td><td>Không thay đổi</td></tr>
+      <tr><td class="tb">vu_exchange</td><td><span class="b b-violet">Exchange</span></td><td><span class="b b-mint">✅ có sẵn</span></td><td>Nguồn đổi CSV→API, schema giữ nguyên. Không ghi spot_diary.</td></tr>
+      <tr><td class="tb">spot_diary</td><td><span class="b b-rose">Spot</span></td><td><span class="b b-mint">✅ có sẵn — order-level</span></td><td>ETL đã chạy. Phase 6 chỉ wrap. Không tạo spot_order_diary mới.</td></tr>
+      <tr><td class="tb">vu_onus_users</td><td><span class="b b-slate">Users</span></td><td><span class="b b-mint">✅ có sẵn</span></td><td>Không thay đổi</td></tr>
+      <tr><td class="tb">risk_events</td><td><span class="b b-rose">Risk MVP</span></td><td><span class="b b-amber">⚠️ tạo mới — Phase 1</span></td><td>Table duy nhất cần CREATE ngay từ đầu</td></tr>
+      <tr><td class="tb">user_context, ai_daily_summary, ...</td><td><span class="b b-violet">Risk AI</span></td><td><span class="b b-slate">⏳ defer Phase 5+</span></td><td>Thiết kế sau EDA, dựa trên data thực. Không định nghĩa trước.</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="sub-h">🔑 risk_events — Table MVP duy nhất cần CREATE ngay</div>
+  <div class="code"><span class="cm">CREATE TABLE</span> <span class="ch">risk_events</span> (
+    id              <span class="ck">BIGINT</span>       AUTO_INCREMENT PRIMARY KEY,
+    case_id         <span class="ck">VARCHAR</span>(36)  NOT NULL UNIQUE,          <span class="cc">-- UUID, dùng trong /confirm {case_id}</span>
+    userid          <span class="ck">VARCHAR</span>(64)  NOT NULL,
+    agent_type      <span class="ck">ENUM</span>(<span class="cs">'onchain','pro','buysell','exchange','spot'</span>) NOT NULL,
+    date_tx         <span class="ck">DATE</span>         NOT NULL,
+    risk_score      <span class="ck">DECIMAL</span>(4,2) NOT NULL,
+    risk_type       <span class="ck">VARCHAR</span>(64)  NOT NULL,                    <span class="cc">-- STRUCTURING, VELOCITY...</span>
+    rules_triggered <span class="ck">JSON</span>         NOT NULL,
+    raw_evidence    <span class="ck">JSON</span>         NOT NULL,
+    llm_summary     <span class="ck">TEXT</span>         DEFAULT NULL,               <span class="cc">-- điền async sau LLM enrich</span>
+    detection_layer <span class="ck">ENUM</span>(<span class="cs">'realtime','endofday'</span>) NOT NULL,
+    verdict         <span class="ck">ENUM</span>(<span class="cs">'pending','TRUE_POSITIVE','FALSE_POSITIVE','snooze'</span>) DEFAULT <span class="cs">'pending'</span>,
+    confirmed_by    <span class="ck">VARCHAR</span>(64)  DEFAULT NULL,
+    confirmed_at    <span class="ck">DATETIME</span>    DEFAULT NULL,
+    alert_sent_at   <span class="ck">DATETIME</span>    DEFAULT NULL,
+    created_at      <span class="ck">DATETIME</span>    DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_userid    (userid),
+    INDEX idx_date_score (date_tx, risk_score DESC),
+    INDEX idx_agent_date (agent_type, date_tx),
+    INDEX idx_verdict   (verdict)
+);</div>
+</div>
+
+<!-- S3: PREREQUISITES -->
+<div class="sec pb">
+  <div class="sh">
+    <div class="sh-top"><span class="snum">03</span><span class="sdot"></span><span class="stag">PREREQUISITES</span></div>
+    <div class="st">Điều Kiện Tiên Quyết — Trước Khi Bắt Đầu</div>
+    <div class="ss">ETL source code & S3 đã có sẵn — tiết kiệm ~1 tuần setup</div>
+  </div>
+
+  <div class="cl cl-mint"><div class="cl-ico">✅</div><div class="cl-body"><div class="cl-title">Đã có sẵn — Không cần làm lại</div>
+  <strong>onusreport ETL source code:</strong> transform.py, etl_meta.py, report_map.py, buysell_filters.py — copy trực tiếp, không sửa.<br>
+  <strong>AWS S3:</strong> Bucket đã tạo, IAM đã cấu hình, đang có data. Chỉ cần: (1) xác nhận bucket name + credentials, (2) thêm prefix <code>raw/</code> cho Parquet mới, (3) verify hoặc thêm Lifecycle Expiration 730 ngày nếu chưa có.
+  </div></div>
+
+  <div class="cg cg-3">
+    <div class="card c-mint"><div class="card-ico">🏗️</div><div class="card-title">Infrastructure <span class="b b-mint" style="vertical-align:middle">Phần lớn có sẵn</span></div><div class="card-desc">Aurora MySQL ✅ · AWS S3 ✅ · Server verify RAM ≥ 2GB (không cần Ollama) · Telegram Bot tạo mới</div></div>
+    <div class="card c-sky"><div class="card-ico">🔑</div><div class="card-title">API Keys & Credentials</div><div class="card-desc">Claude Sonnet API key · Gemini Flash API key · Onus API credentials ✅ · Slack Webhook URL</div></div>
+    <div class="card c-teal"><div class="card-ico">📦</div><div class="card-title">Code & Dependencies</div><div class="card-desc">onuslibs v3.1 ✅ · Python 3.11+ · onusreport ETL modules ✅ · Git repo cần khởi tạo</div></div>
+  </div>
+
+  <div class="sub-h">⚙️ Python Environment</div>
+  <div class="code"><span class="cc"># Tạo venv tách riêng khỏi onusreport cũ</span>
+python3.11 -m venv venv && source venv/bin/activate
+
+pip install boto3 pandas pyarrow duckdb \
+            anthropic google-generativeai \
+            python-telegram-bot requests \
+            pymysql sqlalchemy pyyaml \
+            apscheduler python-dotenv
+
+<span class="cc"># Không cài Ollama — đã bỏ hoàn toàn</span>
+
+<span class="cc"># Cài OpenClaw</span>
+git clone https://github.com/steipete/openclaw
+cd openclaw && pip install -e .
+
+<span class="cc"># Verify</span>
+python -c "import boto3, duckdb, anthropic; print('✅ All deps OK')"
+python -c "import boto3; boto3.client('s3').list_objects_v2(Bucket='your-bucket', MaxKeys=1); print('✅ S3 OK')"</div>
+
+  <div class="sub-h">🔐 settings.yaml — Template</div>
+  <div class="code"><span class="cc"># config/settings.yaml — .gitignore NGAY, không commit</span>
+<span class="ch">api:</span>
+  onus_base_url: <span class="cs">"https://wallet.vndc.io"</span>
+  onus_api_key:  <span class="cs">"${ONUS_API_KEY}"</span>
+  claude_api_key: <span class="cs">"${ANTHROPIC_API_KEY}"</span>
+  gemini_api_key: <span class="cs">"${GEMINI_API_KEY}"</span>
+
+<span class="ch">database:</span>
+  aurora_host: <span class="cs">"your-aurora-endpoint.rds.amazonaws.com"</span>
+  aurora_db:   <span class="cs">"onusreport"</span>
+  aurora_user: <span class="cs">"${DB_USER}"</span>
+  aurora_password: <span class="cs">"${DB_PASSWORD}"</span>
+  pool_size: 5                <span class="cc"># 5 agents × 1 conn mỗi lúc</span>
+
+<span class="ch">s3:</span>
+  bucket: <span class="cs">"your-existing-bucket-name"</span>
+  prefix_raw: <span class="cs">"raw/"</span>
+  region: <span class="cs">"ap-southeast-1"</span>
+  lifecycle_days: 730
+
+<span class="ch">alerts:</span>
+  telegram_token: <span class="cs">"${TELEGRAM_BOT_TOKEN}"</span>
+  telegram_chat_id: <span class="cs">"${TELEGRAM_CHAT_ID}"</span>
+  slack_webhook: <span class="cs">"${SLACK_WEBHOOK_URL}"</span>
+  email_smtp: <span class="cs">"smtp.gmail.com"</span>
+  email_from: <span class="cs">"your@email.com"</span>
+  email_to:   <span class="cs">"your@email.com"</span>
+
+<span class="ch">risk_rules:</span>           <span class="cc"># Threshold để trống — set sau EDA Phase 5</span>
+  critical_threshold: 9.0
+  high_threshold: 7.5
+  medium_threshold: 5.0
+  off_hours: [1, 2, 3, 4]   <span class="cc"># UTC+7</span>
+  velocity_per_hour: null    <span class="cc"># TODO: set sau EDA</span>
+  structuring_count: null    <span class="cc"># TODO: set sau EDA</span>
+  new_large_p95: null        <span class="cc"># TODO: set sau EDA</span>
+
+<span class="ch">schedule:</span>
+  agents_start: <span class="cs">"03:00"</span>
+  finalize_day: <span class="cs">"05:00"</span>
+  orchestrator: <span class="cs">"06:00"</span></div>
+</div>
+
+<!-- S4: PHASE 1 — Foundation -->
+<div class="sec pb">
+  <div class="sh">
+    <div class="sh-top"><span class="snum">04</span><span class="sdot"></span><span class="stag">PHASE 1 · NGÀY 1–3</span></div>
+    <div class="st">🏗️ Repo + BaseAgent + Data Lake Core + OpenClaw</div>
+    <div class="ss">ETL ✅ S3 ✅ — Chỉ build thứ thực sự mới: BaseAgent, Parquet/DuckDB, OpenClaw, risk_events table</div>
+  </div>
+
+  <div class="cl cl-mint"><div class="cl-ico">⚡</div><div class="cl-body"><div class="cl-title">Tiết kiệm ~4 ngày nhờ ETL & S3 có sẵn</div>
+  Bỏ hoàn toàn: tạo S3 bucket, IAM, Lifecycle từ đầu. Bỏ: cài Ollama. Tập trung 3 thứ thực sự mới: BaseAgent interface, Parquet/DuckDB layer, OpenClaw + Telegram.</div></div>
+
+  <div class="cg cg-3">
+    <div class="card c-mint"><div class="card-ico">🎯</div><div class="card-title">Mục tiêu (3 ngày)</div><div class="card-desc">BaseAgent interface xong · Parquet writer ghi + upload S3 · DuckDB query được · OpenClaw kết nối Telegram · risk_events table tạo xong</div></div>
+    <div class="card c-amber"><div class="card-ico">⚠️</div><div class="card-title">Rủi ro chính</div><div class="card-desc">ETL import conflict version Python · OpenClaw cron chưa ổn định ngay lần đầu · DB pool config sai</div></div>
+    <div class="card c-sky"><div class="card-ico">📤</div><div class="card-title">Deliverable</div><div class="card-desc">base_agent.py · parquet_writer.py · duckdb_reader.py · risk_events table · OpenClaw /ping OK</div></div>
+  </div>
+
+  <div class="chk-group">
+    <div class="chk-group-title">Ngày 1 — Repo Setup & ETL Copy</div>
+    <ul class="chk-list">
+      <li><div class="chk-box"></div><div><div class="chk-label">Tạo repo <code>onusreport-ai</code>, init cấu trúc đầy đủ theo repo structure bên trên</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Copy ETL modules: <code>cp onusreport/etl/*.py onusreport-ai/etl/</code> → test import ngay</div><div class="chk-note">Không sửa gì — nếu ImportError thì chỉ fix import path, không sửa logic</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Tạo <code>config/settings.yaml</code> + <code>.env</code>, điền credentials từ onusreport cũ, <code>.gitignore</code> ngay</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Verify S3: boto3 list_objects bucket hiện có → OK · Kiểm tra Lifecycle 730 ngày → thêm nếu thiếu</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Chạy SQL tạo <code>risk_events</code> table theo schema trên — staging trước, production sau khi verify</div></div></li>
+    </ul>
+  </div>
+
+  <div class="chk-group">
+    <div class="chk-group-title">Ngày 2 — BaseAgent + Parquet/DuckDB Layer</div>
+    <ul class="chk-list">
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>agents/base_agent.py</code>: abstract interface, <code>run()</code> → <code>asyncio.gather</code> 3 handlers như code trên</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>datalake/schema_registry.py</code>: fixed schema 5 agents, fill NULL cho field thiếu</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>datalake/parquet_writer.py</code>: <code>append_batch(group, rows)</code> → /tmp/{group}_{date}.jsonl · <code>finalize_day(group)</code> → Parquet → S3 <code>raw/{group}/year=Y/month=M/day=D/data.parquet</code></div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>datalake/duckdb_reader.py</code>: <code>get_user_history(userid, group, days=30)</code> + <code>get_daily_summary(date)</code></div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Test end-to-end: inject 10 rows dummy → append_batch → finalize_day → S3 upload → DuckDB query &lt;500ms ✓</div></div></li>
+    </ul>
+  </div>
+
+  <div class="chk-group">
+    <div class="chk-group-title">Ngày 3 — OpenClaw + Alert Skeleton</div>
+    <ul class="chk-list">
+      <li><div class="chk-box"></div><div><div class="chk-label">Cài OpenClaw, cấu hình Telegram Bot token + Chat ID. Test <code>/ping</code> → reply &lt;3 giây</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>openclaw_skills/etl_runner_skill.py</code>: cron <code>"0 3 * * *"</code>, asyncio.gather placeholder 5 agents, báo Telegram kết quả</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>openclaw_skills/finalize_skill.py</code>: cron <code>"0 5 * * *"</code></div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>scheduler/job_scheduler.py</code>: APScheduler fallback giống cron OpenClaw</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>alerts/telegram_bot.py</code>: gửi alert với case_id, score, rules · 6 commands: /confirm /detail /snooze /status /summary /cases</div></div></li>
+    </ul>
+  </div>
+
+  <div class="ac-grid">
+    <div class="ac-item"><div class="ac-item-title">S3 Parquet Upload</div><div class="ac-item-val">OK</div><div class="ac-item-desc">raw/{group}/Y/M/D/data.parquet đúng path</div></div>
+    <div class="ac-item"><div class="ac-item-title">DuckDB Query</div><div class="ac-item-val">&lt;500ms</div><div class="ac-item-desc">Query dummy file trả về DataFrame đúng</div></div>
+    <div class="ac-item"><div class="ac-item-title">ETL Import</div><div class="ac-item-val">0 errors</div><div class="ac-item-desc">from etl.transform import * không ImportError</div></div>
+    <div class="ac-item"><div class="ac-item-title">OpenClaw</div><div class="ac-item-val">/ping → pong</div><div class="ac-item-desc">Round-trip &lt;3 giây, cron đăng ký OK</div></div>
+  </div>
+</div>
+
+<!-- S5: PHASE 2 — Onchain + Risk -->
+<div class="sec pb">
+  <div class="sh">
+    <div class="sh-top"><span class="snum">05</span><span class="sdot"></span><span class="stag">PHASE 2 · NGÀY 4–10</span></div>
+    <div class="st">⛓️ Onchain Agent + Risk Engine + Learning Lớp 1</div>
+    <div class="ss">Agent đầu tiên chạy end-to-end — từ fetch đến Telegram alert · Template cho 4 agents còn lại</div>
+  </div>
+
+  <div class="cg cg-3">
+    <div class="card c-mint"><div class="card-ico">🎯</div><div class="card-title">Mục tiêu</div><div class="card-desc">Onchain Agent chạy 4 bước đầy đủ · 1 alert thực qua Telegram · /confirm ghi verdict vào risk_events</div></div>
+    <div class="card c-amber"><div class="card-ico">⚠️</div><div class="card-title">Rủi ro chính</div><div class="card-desc">API Onus pagination edge case · DuckDB chưa có lịch sử những ngày đầu → tắt anomaly_x · Score calibration sai lần đầu</div></div>
+    <div class="card c-sky"><div class="card-ico">📤</div><div class="card-title">Deliverable</div><div class="card-desc">onchain_agent.py production-ready · Parquet S3 có data thật · Telegram bot nhận /confirm</div></div>
+  </div>
+
+  <div class="chk-group">
+    <div class="chk-group-title">Onchain Agent</div>
+    <ul class="chk-list">
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>agents/onchain_agent.py</code> kế thừa BaseAgent, implement <code>fetch()</code> với onuslibs.fetch_json</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">ETL handler: enrich → normalize → aggregate → bulk_upsert onchain_diary (tái dụng 100% từ onusreport)</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Parquet handler: append_batch() ghi /tmp/onchain_{date}.jsonl mỗi batch</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>risk/onchain_risk.py</code>: 4 rules (structuring, velocity, off_hours, new_large) — threshold để YAML configurable, chưa set</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>risk/risk_scorer.py</code>: tổng hợp score 0–10, anomaly_x multiplier từ DuckDB — <strong>tắt 7 ngày đầu</strong> (chưa có baseline)</div><div class="chk-note"># TODO: enable anomaly_x after 7 days of Parquet data</div></div></li>
+    </ul>
+  </div>
+
+  <div class="chk-group">
+    <div class="chk-group-title">Aurora Schema & /confirm</div>
+    <ul class="chk-list">
+      <li><div class="chk-box"></div><div><div class="chk-label">risk_events đã tạo Phase 1 → verify schema OK từ agent code</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>learning/feedback_handler.py</code>: parse /confirm {case_id} {verdict} → update risk_events.verdict, confirmed_at, confirmed_by</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>openclaw_skills/confirm_handler_skill.py</code>: trigger /confirm → gọi feedback_handler</div></div></li>
+    </ul>
+  </div>
+
+  <div class="cl cl-amber"><div class="cl-ico">⚠️</div><div class="cl-body"><div class="cl-title">DuckDB history trống những ngày đầu</div>Ngày 1–7 chưa có data S3 để DuckDB query lịch sử → anomaly_x không tính được → tắt DuckDB comparison trong risk_scorer, chỉ dùng rule thuần. Bật lại sau 7 ngày khi đã có baseline.</div></div>
+
+  <div class="chk-group">
+    <div class="chk-group-title">Test End-to-End</div>
+    <ul class="chk-list">
+      <li><div class="chk-box"></div><div><div class="chk-label">Chạy thủ công onchain_agent.run() với data hôm qua, verify Parquet upload S3</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Inject 1 risk event giả score ≥9.0 → verify Telegram alert nhận được với case_id</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Reply /confirm {case_id} FALSE_POSITIVE → verify risk_events.verdict = 'FALSE_POSITIVE', confirmed_at ghi đúng</div></div></li>
+    </ul>
+  </div>
+</div>
+
+<!-- S6: PHASE 3 — Pro + BuySell -->
+<div class="sec pb">
+  <div class="sh">
+    <div class="sh-top"><span class="snum">06</span><span class="sdot"></span><span class="stag">PHASE 3 · NGÀY 11–17</span></div>
+    <div class="st">💱 Pro + BuySell Agent + Cross-Agent Detection</div>
+    <div class="ss">Mở rộng lên 3 agents · agent_runner_skill cập nhật asyncio.gather 3</div>
+  </div>
+
+  <div class="chk-group">
+    <div class="chk-group-title">Pro Agent</div>
+    <ul class="chk-list">
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>agents/pro_agent.py</code>: fetch 4 sub-reports offchain → ETL pro_diary → Parquet /tmp/pro_{date}.jsonl</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>risk/pro_risk.py</code>: volume spike rule + cross-agent check (query risk_events Aurora cùng userid cùng ngày)</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Cross-agent Layering: nếu onchain risk_event tồn tại cùng userid cùng ngày → +3 score</div></div></li>
+    </ul>
+  </div>
+  <div class="chk-group">
+    <div class="chk-group-title">BuySell Agent</div>
+    <ul class="chk-list">
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>agents/buysell_agent.py</code>: fetch buy/sell × system/partner → ETL (buy_sell_diary + rp1~rp4) → Parquet</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>risk/buysell_risk.py</code>: wash trading (BUY→SELL ≤30 phút, amount ≈), rp1 lặp &gt;3 lần/tháng (DuckDB)</div></div></li>
+    </ul>
+  </div>
+  <div class="chk-group">
+    <div class="chk-group-title">Cập nhật agent_runner_skill + rule_analyzer</div>
+    <ul class="chk-list">
+      <li><div class="chk-box"></div><div><div class="chk-label">Cập nhật <code>etl_runner_skill.py</code>: asyncio.gather 3 agents (onchain + pro + buysell)</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>learning/rule_analyzer.py</code>: SQL phân tích false positive rate từ risk_events.verdict theo risk_type</div></div></li>
+    </ul>
+  </div>
+
+  <div class="ac-grid">
+    <div class="ac-item"><div class="ac-item-title">3 Agents Song Song</div><div class="ac-item-val">asyncio OK</div><div class="ac-item-desc">Không conflict DB connection pool</div></div>
+    <div class="ac-item"><div class="ac-item-title">Cross-agent</div><div class="ac-item-val">+3 score</div><div class="ac-item-desc">Pro agent thấy onchain risk_event cùng userid → cộng đúng</div></div>
+    <div class="ac-item"><div class="ac-item-title">Wash Trading</div><div class="ac-item-val">Detect</div><div class="ac-item-desc">Test BUY→SELL 10 phút cùng amount → flag đúng</div></div>
+    <div class="ac-item"><div class="ac-item-title">Parquet S3</div><div class="ac-item-val">3 files/ngày</div><div class="ac-item-desc">onchain + pro + buysell sau 5AM</div></div>
+  </div>
+</div>
+
+<!-- S7: PHASE 4 — Exchange + Orchestrator -->
+<div class="sec pb">
+  <div class="sh">
+    <div class="sh-top"><span class="snum">07</span><span class="sdot"></span><span class="stag">PHASE 4 · NGÀY 18–24</span></div>
+    <div class="st">📈 Exchange Agent + OpenClaw Orchestrator + LLM Integration</div>
+    <div class="ss">Agent thứ 4 · Daily briefing Claude Sonnet 6AM · Gemini Flash cho borderline scoring</div>
+  </div>
+
+  <div class="cl cl-rose"><div class="cl-ico">🚨</div><div class="cl-body"><div class="cl-title">Ngày 18 FIRST: Fetch thử Exchange API trước khi code</div>
+  Fetch endpoint Exchange API, print raw JSON response, xác nhận schema có đủ fields của vu_exchange không. Nếu schema thiếu field → cần migration plan. <strong>Không code agent trước bước này.</strong></div></div>
+
+  <div class="chk-group">
+    <div class="chk-group-title">Exchange Agent</div>
+    <ul class="chk-list">
+      <li class="chk-critical"><div class="chk-box"></div><div><div class="chk-label"><strong>Ngày 18:</strong> Fetch thử Exchange API (vndcacc.exchange + usdtacc.exchange), print raw response, confirm schema</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>agents/exchange_agent.py</code>: fetch API → ETL vu_exchange <strong>(không spot_diary)</strong> → Parquet</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>risk/exchange_risk.py</code>: rapid swap (BUY→SELL cùng coin ≤5 phút, trace DuckDB), off-hours large</div></div></li>
+    </ul>
+  </div>
+  <div class="chk-group">
+    <div class="chk-group-title">OpenClaw Orchestrator + LLM</div>
+    <ul class="chk-list">
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>risk/llm_enricher.py</code>: Claude Sonnet async cho alert narrative (score ≥7.5) + Gemini Flash cho borderline (5.0–7.4)</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>risk/end_of_day_rules.py</code>: cross_agent_layering, cross_market_pump (query risk_events sau finalize)</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>openclaw_skills/daily_briefing_skill.py</code>: cron 06:00, DuckDB summary → Claude Sonnet → Telegram · Lưu pattern vào OpenClaw memory</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>openclaw_skills/query_user_skill.py</code>: nhận userid từ Vũ → query diary + risk_events → Claude Sonnet → tiếng Việt</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>openclaw_skills/risk_query_skill.py</code>: "top risk hôm nay/tuần này" → risk_events query → format → Telegram</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>alerts/slack_webhook.py</code>: HIGH (7.5–9.0) format đẹp với evidence</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>alerts/email_sender.py</code>: MEDIUM (5.0–7.5) daily digest</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Cập nhật etl_runner_skill: asyncio.gather 4 agents</div></div></li>
+    </ul>
+  </div>
+</div>
+
+<!-- S8: PHASE 5 — Scheduler + Rule Analyzer -->
+<div class="sec pb">
+  <div class="sh">
+    <div class="sh-top"><span class="snum">08</span><span class="sdot"></span><span class="stag">PHASE 5 · NGÀY 25–31</span></div>
+    <div class="st">🚨 OpenClaw Skills + Scheduler + Rule Analyzer Skill</div>
+    <div class="ss">Hoàn thiện automation layer — hệ thống tự vận hành không cần can thiệp thủ công</div>
+  </div>
+
+  <div class="chk-group">
+    <div class="chk-group-title">OpenClaw Skills hoàn chỉnh</div>
+    <ul class="chk-list">
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>openclaw_skills/rule_analyzer_skill.py</code>: cron "0 8 1 * *" (ngày 1 hàng tháng), gọi rule_analyzer.py, format gợi ý, nhắn Telegram</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Xử lý /apply {rule_name}: đọc suggestion → update settings.yaml → hot-reload (risk_scorer load mỗi lần chạy, không cache)</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Test trigger rule_analyzer_skill thủ công, verify gợi ý format đúng</div></div></li>
+    </ul>
+  </div>
+  <div class="chk-group">
+    <div class="chk-group-title">Scheduler & Finalize Day</div>
+    <ul class="chk-list">
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>scheduler/job_scheduler.py</code>: APScheduler fallback — cron giống OpenClaw, kích hoạt nếu OpenClaw fail</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Test finalize_day 4 agents: 4 .jsonl → 4 .parquet → upload S3 → cleanup temp</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Test crash recovery: kill process giữa chừng → restart → temp file vẫn còn → finalize_day OK</div></div></li>
+    </ul>
+  </div>
+
+  <div class="cl cl-sky"><div class="cl-ico">💡</div><div class="cl-body"><div class="cl-title">Hot-reload settings.yaml không cần restart</div>risk_scorer.py load settings mỗi lần chạy (không cache global), nên khi /apply update settings.yaml → rules mới áp dụng ngay từ lần chạy tiếp theo 3AM. Verify: /apply velocity → kiểm tra log lần chạy tiếp theo dùng threshold mới.</div></div>
+</div>
+
+<!-- S9: PHASE 6 — Spot Agent -->
+<div class="sec pb">
+  <div class="sh">
+    <div class="sh-top"><span class="snum">09</span><span class="sdot"></span><span class="stag">PHASE 6 · NGÀY 32–38</span></div>
+    <div class="st">🪙 Spot Agent + Cross-Market Detection</div>
+    <div class="ss">Wrap ETL đã có vào BaseAgent pattern · ~2 ngày Spot · Risk rules order-level · 5 agents hoàn chỉnh</div>
+  </div>
+
+  <div class="cl cl-mint"><div class="cl-ico">✅</div><div class="cl-body"><div class="cl-title">spot_diary đã tồn tại — order-level — chỉ wrap</div>
+  Không tạo spot_order_diary mới. ETL dùng onuslibs method đã chạy được. Phase 6 chỉ wrap vào BaseAgent pattern, thêm _parquet_handler và _risk_handler. Ước tính ~2 ngày cho Spot (ngày 32–33), 4 ngày còn lại cho cross-market và full system test.</div></div>
+
+  <div class="chk-group">
+    <div class="chk-group-title">Spot Agent — Wrap</div>
+    <ul class="chk-list">
+      <li><div class="chk-box"></div><div><div class="chk-label">Wrap ETL spot_diary đã có vào <code>agents/spot_agent.py</code> kế thừa BaseAgent, thêm _parquet_handler + _risk_handler</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Viết <code>risk/spot_risk.py</code>: 4 rules trên spot_diary order-level</div></div></li>
+    </ul>
+  </div>
+
+  <div class="tw"><table>
+    <thead><tr><th>Rule</th><th>Logic</th><th>Score</th></tr></thead>
+    <tbody>
+      <tr><td class="tb">order_layering</td><td>≥5 lệnh cùng coin, giá ±0.5%, cancel &gt;80% trong &lt;1 phút</td><td>+4.0</td></tr>
+      <tr><td class="tb">quote_stuffing</td><td>&gt;20 lệnh/phút cùng userid vs DuckDB 30 ngày avg</td><td>+3.0</td></tr>
+      <tr><td class="tb">cross_market_pump</td><td>Query risk_events onchain cùng userid cùng coin cùng ngày → tổng hợp score</td><td>+4.0</td></tr>
+      <tr><td class="tb">abnormal_fill_rate</td><td>fill_rate &lt;10% vs DuckDB avg 30 ngày → cancel spam flag</td><td>+2.0</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="chk-group">
+    <div class="chk-group-title">Cập nhật toàn hệ thống → 5 agents</div>
+    <ul class="chk-list">
+      <li><div class="chk-box"></div><div><div class="chk-label">Cập nhật etl_runner_skill: asyncio.gather đủ 5 agents (thêm SpotAgent)</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Cập nhật finalize_skill: thêm 'spot' vào loop</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Test toàn bộ 5 agents chạy song song 3–5AM: verify không có race condition trên DB pool 5 connections</div></div></li>
+    </ul>
+  </div>
+</div>
+
+<!-- S10: PHASE 7 — Shadow → Go-Live -->
+<div class="sec pb">
+  <div class="sh">
+    <div class="sh-top"><span class="snum">10</span><span class="sdot"></span><span class="stag">PHASE 7 · NGÀY 39–45</span></div>
+    <div class="st">📊 Shadow Mode → Looker → Go-Live</div>
+    <div class="ss">Chạy song song onusreport cũ 5 đêm trước khi go-live · Không skip</div>
+  </div>
+
+  <div class="cl cl-violet"><div class="cl-ico">🔬</div><div class="cl-body"><div class="cl-title">Shadow Mode — quan trọng nhất tuần này</div>Chạy onusreport-ai song song với onusreport cũ trong 5 đêm: cùng data, cùng thời điểm, chỉ ghi vào DB staging riêng (không ghi production). So sánh kết quả diary tables vs onusreport. Nếu diverge &gt;5% → debug trước khi go-live.</div></div>
+
+  <div class="chk-group">
+    <div class="chk-group-title">Shadow Mode Setup (Ngày 1–5)</div>
+    <ul class="chk-list">
+      <li class="chk-critical"><div class="chk-box"></div><div><div class="chk-label">Tạo Aurora schema staging riêng: <code>onusreport_ai_staging</code> — copy cấu trúc từ production</div></div></li>
+      <li class="chk-critical"><div class="chk-box"></div><div><div class="chk-label">Cấu hình SHADOW_MODE=true → agents ghi vào staging, không ghi production</div></div></li>
+      <li class="chk-critical"><div class="chk-box"></div><div><div class="chk-label">Chạy 5 nights liên tiếp. Mỗi sáng: comparison script diary tables staging vs onusreport cũ → phải &lt;5% divergence</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Calibrate threshold: quá nhiều alert → tăng threshold · quá ít → giảm. Update settings.yaml, tạo YAML commit với threshold values.</div></div></li>
+    </ul>
+  </div>
+  <div class="chk-group">
+    <div class="chk-group-title">Looker Studio Dashboard (Ngày 3–5)</div>
+    <ul class="chk-list">
+      <li><div class="chk-box"></div><div><div class="chk-label">Connect Looker Studio → Aurora MySQL (connector chuẩn)</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Dashboard 1: Diary tables overview — 5 groups, daily volume, date gaps (onchain_diary, buy_sell_diary, vu_exchange, pro_diary, spot_diary)</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Dashboard 2: Risk events — score distribution, risk_type breakdown, daily trend, verdict split</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Dashboard 3: Learning Loop — FP rate từ risk_events.verdict, threshold change log</div></div></li>
+    </ul>
+  </div>
+  <div class="chk-group">
+    <div class="chk-group-title">Go-Live (Ngày 6–7)</div>
+    <ul class="chk-list">
+      <li class="chk-critical"><div class="chk-box"></div><div><div class="chk-label">Xác nhận thủ công: 5 đêm shadow OK, divergence &lt;5% → tắt SHADOW_MODE, chuyển sang production Aurora</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Monitor 48h đầu: check log mỗi sáng, verify Telegram nhận briefing 6AM</div></div></li>
+      <li><div class="chk-box"></div><div><div class="chk-label">Tắt Prefect flows onusreport cũ <strong>chỉ sau 5 ngày production ổn định không có sự cố</strong></div></div></li>
+    </ul>
+  </div>
+</div>
+
+<!-- S11: TESTING -->
+<div class="sec pb">
+  <div class="sh">
+    <div class="sh-top"><span class="snum">11</span><span class="sdot"></span><span class="stag">TESTING STRATEGY</span></div>
+    <div class="st">Chiến Lược Testing — 4 Cấp Độ</div>
+    <div class="ss">Unit → Integration → Stress → Shadow Mode — không skip bất kỳ cấp nào</div>
+  </div>
+
+  <div class="tw"><table>
+    <thead><tr><th>Cấp độ</th><th>Phạm vi</th><th>Tool</th><th>Khi nào</th><th>Pass criteria</th></tr></thead>
+    <tbody>
+      <tr class="risk-low"><td class="tb">Unit Test</td><td>Từng function: risk rules, score calc, parquet writer, context checker</td><td><span class="b b-sky">pytest</span></td><td>Mỗi phase, trước khi push</td><td>100% pass, 0 exception</td></tr>
+      <tr><td class="tb">Integration Test</td><td>1 agent full: fetch → ETL → Parquet → Risk → Alert (DB staging)</td><td><span class="b b-violet">Manual</span></td><td>Cuối mỗi phase, trước khi thêm agent</td><td>Parquet đúng schema, diary update, alert gửi OK</td></tr>
+      <tr class="risk-med"><td class="tb">Stress Test</td><td>5 agents song song + DB pool + S3 concurrent upload</td><td><span class="b b-amber">Manual</span></td><td>Phase 6 sau Spot Agent xong</td><td>Không deadlock, pool 5 conn × 5 agents OK</td></tr>
+      <tr class="risk-high"><td class="tb">Shadow Mode</td><td>Toàn hệ thống song song vs onusreport cũ</td><td><span class="b b-mint">Python script</span></td><td>Phase 7, 5 đêm liên tiếp</td><td>Divergence &lt;5%, không crash</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="sub-h">🧪 Test Cases quan trọng</div>
+  <div class="code"><span class="cc"># tests/test_risk_rules.py</span>
+
+<span class="cm">def</span> <span class="ch">test_structuring_detected</span>():
+    txs = [make_tx(amount=<span class="cv">990</span>), make_tx(amount=<span class="cv">995</span>), make_tx(amount=<span class="cv">1000</span>),
+           make_tx(amount=<span class="cv">1005</span>), make_tx(amount=<span class="cv">998</span>)]
+    result = onchain_risk.check_structuring(txs)
+    assert result.flagged == <span class="cv">True</span>
+    assert result.risk_type == <span class="cs">"STRUCTURING"</span>
+
+<span class="cm">def</span> <span class="ch">test_spot_order_layering</span>():
+    orders = make_layering_orders(count=<span class="cv">6</span>, cancel_rate=<span class="cv">0.83</span>, window_seconds=<span class="cv">45</span>)
+    result = spot_risk.check_order_layering(orders)
+    assert result.flagged == <span class="cv">True</span>
+
+<span class="cm">def</span> <span class="ch">test_wash_trading_detected</span>():
+    buy = make_tx(direction=<span class="cs">"BUY"</span>,  amount=<span class="cv">1000</span>, ts=<span class="cv">0</span>)
+    sell = make_tx(direction=<span class="cs">"SELL"</span>, amount=<span class="cv">1000</span>, ts=<span class="cv">1200</span>)   <span class="cc"># 20 phút sau</span>
+    result = buysell_risk.check_wash_trading([buy, sell])
+    assert result.flagged == <span class="cv">True</span>
+
+<span class="cm">def</span> <span class="ch">test_finalize_crash_recovery</span>():
+    writer.append_batch(<span class="cs">"onchain"</span>, make_batch(<span class="cv">10</span>))
+    writer2 = ParquetWriter()           <span class="cc"># simulate crash: instance mới</span>
+    result = writer2.finalize_day(<span class="cs">"onchain"</span>)
+    assert result[<span class="cs">"uploaded"</span>] == <span class="cv">True</span>
+
+<span class="cm">def</span> <span class="ch">test_confirm_updates_verdict</span>():
+    case_id = create_risk_event(score=<span class="cv">8.5</span>)
+    feedback_handler.handle(case_id=case_id, verdict=<span class="cs">"FALSE_POSITIVE"</span>)
+    event = db.get_risk_event(case_id)
+    assert event.verdict == <span class="cs">"FALSE_POSITIVE"</span>
+    assert event.confirmed_at <span class="ck">is not None</span></div>
+</div>
+
+<!-- S12: GO-LIVE CHECKLIST -->
+<div class="sec pb">
+  <div class="sh">
+    <div class="sh-top"><span class="snum">12</span><span class="sdot"></span><span class="stag">GO-LIVE CHECKLIST</span></div>
+    <div class="st">✅ Checklist Trước Khi Go-Live Chính Thức</div>
+    <div class="ss">Tất cả phải xanh — không có ngoại lệ</div>
+  </div>
+
+  <div class="cg cg-2">
+    <div>
+      <div class="chk-group">
+        <div class="chk-group-title" style="color:var(--rose)">🔴 CRITICAL — Bắt buộc 100%</div>
+        <ul class="chk-list">
+          <li class="chk-critical"><div class="chk-box"></div><div><div class="chk-label">5 agents chạy 3AM không lỗi ít nhất 5 đêm liên tiếp trong shadow mode</div></div></li>
+          <li class="chk-critical"><div class="chk-box"></div><div><div class="chk-label">finalize_day upload đủ 5 Parquet files lên S3 mỗi ngày</div></div></li>
+          <li class="chk-critical"><div class="chk-box"></div><div><div class="chk-label">Telegram CRITICAL alert hoạt động — test với score giả ≥9.0</div></div></li>
+          <li class="chk-critical"><div class="chk-box"></div><div><div class="chk-label">/confirm lưu đúng verdict + confirmed_at vào risk_events</div></div></li>
+          <li class="chk-critical"><div class="chk-box"></div><div><div class="chk-label">DB connection pool không bị leak sau 1 đêm chạy 5 agents</div></div></li>
+          <li class="chk-critical"><div class="chk-box"></div><div><div class="chk-label">settings.yaml và .env không có trong git history</div></div></li>
+          <li class="chk-critical"><div class="chk-box"></div><div><div class="chk-label">S3 bucket không public · IAM policy đúng · Aurora backup enabled</div></div></li>
+          <li class="chk-critical"><div class="chk-box"></div><div><div class="chk-label">Divergence diary tables vs onusreport cũ &lt;5%</div></div></li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="chk-group">
+        <div class="chk-group-title" style="color:var(--amber)">🟡 IMPORTANT — Nên có</div>
+        <ul class="chk-list">
+          <li><div class="chk-box"></div><div><div class="chk-label">OpenClaw daily briefing 6AM chạy đúng giờ ít nhất 3 ngày</div></div></li>
+          <li><div class="chk-box"></div><div><div class="chk-label">Slack HIGH alert hoạt động — test với score 8.0</div></div></li>
+          <li><div class="chk-box"></div><div><div class="chk-label">DuckDB query có data ít nhất 7 ngày → anomaly_x tính được</div></div></li>
+          <li><div class="chk-box"></div><div><div class="chk-label">Looker Studio dashboard load data mới trong &lt;1 ngày</div></div></li>
+          <li><div class="chk-box"></div><div><div class="chk-label">rule_analyzer.py chạy thủ công cho kết quả hợp lý</div></div></li>
+          <li><div class="chk-box"></div><div><div class="chk-label">Cross-agent detection (Pro + Onchain) test case thành công</div></div></li>
+          <li><div class="chk-box"></div><div><div class="chk-label">Spot Agent order layering detect đúng với test data</div></div></li>
+          <li><div class="chk-box"></div><div><div class="chk-label">Exchange API schema xác nhận khớp vu_exchange</div></div></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S13: MONITORING -->
+<div class="sec pb">
+  <div class="sh">
+    <div class="sh-top"><span class="snum">13</span><span class="sdot"></span><span class="stag">MONITORING & OPS</span></div>
+    <div class="st">Vận Hành Hàng Ngày — Sau Go-Live</div>
+    <div class="ss">Quy trình vận hành tối thiểu để hệ thống chạy ổn định lâu dài</div>
+  </div>
+
+  <div class="mon-grid">
+    <div class="mon-card">
+      <div class="mon-time">DAILY · 6:00 AM</div>
+      <div class="mon-title">☀️ Morning Check</div>
+      <ul class="mon-items">
+        <li>Đọc OpenClaw daily briefing Telegram</li>
+        <li>Verify 5 Parquet files trên S3 hôm qua</li>
+        <li>Check không có ERROR trong log</li>
+        <li>Review CRITICAL cases nếu có</li>
+        <li>/confirm hoặc /snooze cases pending</li>
+      </ul>
+    </div>
+    <div class="mon-card">
+      <div class="mon-time">WEEKLY · THỨ 2</div>
+      <div class="mon-title">📊 Weekly Review</div>
+      <ul class="mon-items">
+        <li>Xem Looker dashboard 7 ngày qua</li>
+        <li>Check FP rate từ risk_events.verdict</li>
+        <li>Verify OpenClaw memory đang tích lũy</li>
+        <li>Check S3 usage không tăng đột biến</li>
+        <li>Anomaly_x baseline đủ chưa (&gt;7 ngày)</li>
+      </ul>
+    </div>
+    <div class="mon-card">
+      <div class="mon-time">MONTHLY · NGÀY 1</div>
+      <div class="mon-title">🔧 Monthly Calibration</div>
+      <ul class="mon-items">
+        <li>rule_analyzer_skill tự chạy</li>
+        <li>Review và /apply gợi ý nếu hợp lý</li>
+        <li>Check S3 Parquet size/growth</li>
+        <li>Review alert response SLA</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="sub-h">🚨 Alert Response Playbook</div>
+  <div class="tw"><table>
+    <thead><tr><th>Type</th><th>Score</th><th>Channel</th><th>SLA</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr class="risk-high"><td class="tb">CRITICAL</td><td>≥ 9.0</td><td>Telegram</td><td>30 phút</td><td>/detail {id} → review evidence → /confirm TRUE_POSITIVE hoặc FALSE_POSITIVE</td></tr>
+      <tr class="risk-med"><td class="tb">HIGH</td><td>7.5–9.0</td><td>Telegram + Slack</td><td>2 giờ</td><td>Review Slack → confirm qua Telegram bot</td></tr>
+      <tr class="risk-low"><td class="tb">MEDIUM</td><td>5.0–7.5</td><td>Email digest</td><td>Cuối ngày</td><td>Batch confirm buổi tối</td></tr>
+      <tr><td class="tb">System Error</td><td>N/A</td><td>Telegram</td><td>1 giờ</td><td>Xem log → check level L1/L2/L3 → action</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="sub-h">📊 Health Check SQL</div>
+  <div class="code"><span class="cc">-- 1. Agents có chạy đêm qua không?</span>
+SELECT agent_type, COUNT(*) AS records, MAX(created_at) AS last_run
+FROM risk_events
+WHERE DATE(created_at) = CURDATE() - INTERVAL 1 DAY
+GROUP BY agent_type;
+
+<span class="cc">-- 2. False positive rate 7 ngày gần nhất</span>
+SELECT risk_type,
+       COUNT(*) AS total,
+       ROUND(SUM(verdict='FALSE_POSITIVE')/COUNT(*)*100, 1) AS fp_pct
+FROM risk_events
+WHERE confirmed_at >= NOW() - INTERVAL 7 DAY
+  AND verdict != 'pending'
+GROUP BY risk_type ORDER BY fp_pct DESC;
+
+<span class="cc">-- 3. Top users risk score tuần này</span>
+SELECT userid, COUNT(*) AS events,
+       ROUND(AVG(risk_score),2) AS avg_score, MAX(risk_score) AS max_score
+FROM risk_events
+WHERE date_tx >= CURDATE() - INTERVAL 7 DAY
+GROUP BY userid ORDER BY avg_score DESC LIMIT 20;
+
+<span class="cc">-- 4. Cases pending quá lâu</span>
+SELECT case_id, userid, agent_type, risk_score, created_at
+FROM risk_events
+WHERE verdict = 'pending' AND created_at < NOW() - INTERVAL 24 HOUR
+ORDER BY risk_score DESC LIMIT 10;</div>
+</div>
+
+<!-- S14: ROLLBACK -->
+<div class="sec pb">
+  <div class="sh">
+    <div class="sh-top"><span class="snum">14</span><span class="sdot"></span><span class="stag">ROLLBACK PLAN</span></div>
+    <div class="st">Kế Hoạch Rollback — Khi Có Sự Cố</div>
+    <div class="ss">3 cấp độ rollback tương ứng với 3 mức nghiêm trọng</div>
+  </div>
+
+  <div class="tl">
+    <div class="tli">
+      <div class="tld" style="background:var(--amber)">L1</div>
+      <div class="tlc">
+        <div class="tlw" style="color:var(--amber)">LEVEL 1 — AGENT CRASH</div>
+        <div class="tlt">🟡 1 Agent bị lỗi, các agent khác vẫn chạy</div>
+        <ul class="tllist">
+          <li>asyncio isolation: return_exceptions=True trong gather — fail 1 không dừng 4 còn lại</li>
+          <li>OpenClaw log + Telegram tự động: "⚠️ exchange_agent failed: {error_msg}"</li>
+          <li>finalize_skill bỏ qua group lỗi (kiểm tra temp file tồn tại trước khi convert)</li>
+          <li>Sáng: xem log → fix bug → chạy lại agent thủ công với data hôm qua</li>
+          <li><strong>Data loss:</strong> 1 ngày của 1 agent. Diary table thiếu 1 ngày → backfill từ API Onus</li>
+        </ul>
+      </div>
+    </div>
+    <div class="tli">
+      <div class="tld" style="background:var(--rose)">L2</div>
+      <div class="tlc">
+        <div class="tlw" style="color:var(--rose)">LEVEL 2 — TOÀN HỆ THỐNG LỖI</div>
+        <div class="tlt">🔴 Tất cả agents crash, không có data</div>
+        <ul class="tllist">
+          <li>Ngay lập tức: onusreport cũ vẫn chạy độc lập → KPI báo cáo không bị gián đoạn</li>
+          <li>Xác định nguyên nhân: DB down? S3 outage? Server hết RAM? API Onus thay đổi schema?</li>
+          <li>APScheduler fallback đã kích hoạt chưa? Check log</li>
+          <li>Nếu API Onus thay đổi: update onuslibs → test → deploy trong 24h</li>
+          <li>Risk alerts gián đoạn: tăng manual review trong thời gian fix</li>
+        </ul>
+      </div>
+    </div>
+    <div class="tli">
+      <div class="tld" style="background:var(--violet)">L3</div>
+      <div class="tlc">
+        <div class="tlw" style="color:var(--violet)">LEVEL 3 — DATA CORRUPTION</div>
+        <div class="tlt">🟣 Diary tables bị ghi sai, risk_events không đúng</div>
+        <ul class="tllist">
+          <li>Stop tất cả agents ngay lập tức (kill cron jobs + APScheduler)</li>
+          <li>Restore Aurora từ snapshot (automated backup daily, giữ 7 ngày)</li>
+          <li>S3 Parquet append-only — không bị ảnh hưởng, dùng rebuild nếu cần</li>
+          <li>Replay data từ ngày bị lỗi: SHADOW_MODE=true, verify trước khi restore production</li>
+          <li>Post-mortem: cập nhật validation logic để ngăn tái diễn</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="cl cl-mint" style="margin-top:16px"><div class="cl-ico">🛡️</div><div class="cl-body"><div class="cl-title">Nguyên tắc không bao giờ vi phạm</div>
+  onusreport cũ vẫn chạy độc lập trong suốt quá trình deploy và vận hành onusreport-ai. Chỉ tắt onusreport cũ khi onusreport-ai đã chạy ổn định ≥30 ngày liên tiếp không có sự cố nghiêm trọng. Secret keys không bao giờ commit lên git. Shadow Mode 5 đêm không được skip.</div></div>
+</div>
+
+<!-- SUMMARY -->
+<hr>
+<div class="sumbox">
+  <div class="sumbox-title">// TÓM TẮT — onusreport-ai v6 · Multi-Agent ETL + Real-time Risk AI</div>
+  <div class="sum-grid">
+    <div>
+      <div class="sg-lbl">7 Phases · ~45 ngày</div>
+      <div class="sg-text">
+        <strong style="color:#fff">Phase 1 (ngày 1–3):</strong> Repo + BaseAgent + Parquet/DuckDB + OpenClaw + risk_events<br>
+        <strong style="color:#fff">Phase 2 (ngày 4–10):</strong> Onchain Agent + Risk Engine + /confirm<br>
+        <strong style="color:#fff">Phase 3 (ngày 11–17):</strong> Pro + BuySell + Cross-agent · 3 agents<br>
+        <strong style="color:#fff">Phase 4 (ngày 18–24):</strong> Exchange API + LLM Orchestrator · 4 agents<br>
+        <strong style="color:#fff">Phase 5 (ngày 25–31):</strong> Rule Analyzer Skill + APScheduler<br>
+        <strong style="color:#fff">Phase 6 (ngày 32–38):</strong> Spot Wrap + Cross-market · 5 agents<br>
+        <strong style="color:#fff">Phase 7 (ngày 39–45):</strong> Shadow 5 đêm → Looker 3 dashboards → Go-Live
+      </div>
+    </div>
+    <div>
+      <div class="sg-lbl">Confirmed Facts v6 (sửa so với v5)</div>
+      <div class="sg-text">
+        <strong style="color:#fff">Exchange:</strong> API only → chỉ <code style="color:var(--mint)">vu_exchange</code>, không spot_diary<br>
+        <strong style="color:#fff">Spot:</strong> <code style="color:var(--mint)">spot_diary</code> = order-level đã có, onuslibs, wrap only<br>
+        <strong style="color:#fff">No Ollama:</strong> Claude Sonnet + Gemini Flash là đủ<br>
+        <strong style="color:#fff">Risk AI tables:</strong> defer Phase 5+ sau EDA thực tế<br>
+        <strong style="color:#fff">/confirm:</strong> ghi verdict vào risk_events từ Phase 2
+      </div>
+    </div>
+    <div>
+      <div class="sg-lbl">Testing & Safety</div>
+      <div class="sg-text">
+        <strong style="color:#fff">Unit tests:</strong> Mỗi phase, mỗi risk rule<br>
+        <strong style="color:#fff">Integration:</strong> Cuối mỗi phase với DB staging<br>
+        <strong style="color:#fff">Stress test:</strong> Phase 6 — 5 agents song song<br>
+        <strong style="color:#fff">Shadow Mode:</strong> 5 đêm bắt buộc, divergence &lt;5%<br>
+        <strong style="color:#fff">Rollback:</strong> 3 cấp, Aurora snapshot daily
+      </div>
+    </div>
+    <div>
+      <div class="sg-lbl">LLM Role Mapping (no Ollama)</div>
+      <div class="sg-text">
+        <strong style="color:#fff">Claude Sonnet:</strong> Alert narrative (≥7.5) · Daily briefing · Telegram query<br>
+        <strong style="color:#fff">Gemini Flash:</strong> Borderline scoring (5.0–7.4) · Rule analyzer monthly<br>
+        <strong style="color:#fff">Không làm:</strong> ETL logic · Rule evaluation · Score calculation<br>
+        <strong style="color:#fff">Cost:</strong> ~$18/tháng (~15 calls/ngày Sonnet + Gemini)
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /page -->
+</body>
+</html>
