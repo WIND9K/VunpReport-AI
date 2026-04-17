@@ -1,6 +1,6 @@
-# onusreport-ai
+# vunpreport-ai
 
-> Multi-Agent ETL Pipeline + Real-time Risk AI cho [goonus.io](https://goonus.io)
+> Multi-Agent ETL Pipeline + Real-time Risk AI cho [govunp.io](https://govunp.io)
 
 [![Python](https://img.shields.io/badge/Python-3.11-blue)](https://python.org)
 [![Aurora](https://img.shields.io/badge/Aurora-MySQL-orange)](https://aws.amazon.com/rds/aurora/)
@@ -11,7 +11,7 @@
 
 ## Tổng quan
 
-**onusreport-ai** là hệ thống multi-agent chạy hàng đêm, bao gồm:
+**vunpreport-ai** là hệ thống multi-agent chạy hàng đêm, bao gồm:
 
 - **ETL pipeline**: 5 agents độc lập, `asyncio.gather`, ghi Aurora + S3 Parquet
 - **Real-time risk**: phát hiện bất thường per batch, per userid — trong lúc ETL đang chạy
@@ -35,7 +35,7 @@
 | # | Điểm | Trạng thái |
 |---|---|---|
 | 1 | Exchange agent fetch API → ghi **chỉ `vu_exchange`**, không liên quan `spot_diary` | ✅ Confirmed |
-| 2 | `spot_diary` = order-level, ETL onuslibs đã chạy → Phase 6 chỉ **wrap**, không tạo table mới | ✅ Confirmed |
+| 2 | `spot_diary` = order-level, ETL vunplibs đã chạy → Phase 6 chỉ **wrap**, không tạo table mới | ✅ Confirmed |
 | 3 | **Bỏ Ollama hoàn toàn** — Claude Sonnet + Gemini Flash là đủ | ✅ Confirmed |
 | 4 | Risk AI tables (`user_context`, `ai_daily_summary`...) → **defer sau EDA Phase 5**. Chỉ tạo `risk_events` ngay từ đầu | ✅ Confirmed |
 
@@ -81,7 +81,7 @@ Layer 1 │ Aurora MySQL  +  S3 Parquet  +  DuckDB in-process
 ## Repo Structure
 
 ```
-onusreport-ai/
+vunpreport-ai/
 ├── agents/
 │   ├── base_agent.py          # Abstract: fetch() → asyncio.gather 3 handlers
 │   ├── onchain_agent.py
@@ -89,7 +89,7 @@ onusreport-ai/
 │   ├── buysell_agent.py
 │   ├── exchange_agent.py
 │   └── spot_agent.py
-├── etl/                       # Copy từ onusreport — không sửa logic
+├── etl/                       # Copy từ vunpreport — không sửa logic
 │   ├── transform.py
 │   ├── etl_meta.py
 │   ├── report_map.py
@@ -148,7 +148,7 @@ class BaseAgent(ABC):
 
     @abstractmethod
     async def fetch(self) -> list[dict]:
-        """Fetch raw data từ onuslibs — implement trong mỗi agent"""
+        """Fetch raw data từ vunplibs — implement trong mỗi agent"""
         ...
 
     async def run(self):
@@ -182,7 +182,7 @@ async def run_all_agents(date):
         ProAgent(date, config).run(),
         BuySellAgent(date, config).run(),
         ExchangeAgent(date, config).run(),   # API → chỉ vu_exchange
-        SpotAgent(date, config).run(),       # onuslibs → spot_diary (wrap)
+        SpotAgent(date, config).run(),       # vunplibs → spot_diary (wrap)
         return_exceptions=True               # fail 1 không dừng 4 còn lại
     )
     ok   = sum(1 for r in results if not isinstance(r, Exception))
@@ -201,7 +201,7 @@ async def run_all_agents(date):
 | `buy_sell_diary` | BuySell | ✅ Có sẵn |
 | `vu_exchange` | Exchange | ✅ Có sẵn (nguồn đổi CSV → API, schema giữ nguyên) |
 | `spot_diary` | Spot | ✅ Có sẵn — order-level, ETL đã chạy |
-| `vu_onus_users` | Users | ✅ Có sẵn |
+| `vu_vunp_users` | Users | ✅ Có sẵn |
 | `risk_events` | Risk MVP | ⚠️ **Tạo mới — Phase 1** |
 | `user_context`, `ai_daily_summary`... | Risk AI | ⏳ Defer Phase 5+ sau EDA |
 
@@ -327,14 +327,14 @@ python -c "import boto3, duckdb, anthropic; print('✅ All deps OK')"
 ```yaml
 # .gitignore NGAY — không commit file này
 api:
-  onus_base_url: "https://wallet.vndc.io"
-  onus_api_key:  "${ONUS_API_KEY}"
+  vunp_base_url: "https://wallet.vndc.io"
+  vunp_api_key:  "${vunp_API_KEY}"
   claude_api_key: "${ANTHROPIC_API_KEY}"
   gemini_api_key: "${GEMINI_API_KEY}"
 
 database:
   aurora_host: "your-aurora-endpoint.rds.amazonaws.com"
-  aurora_db:   "onusreport"
+  aurora_db:   "vunpreport"
   aurora_user: "${DB_USER}"
   aurora_password: "${DB_PASSWORD}"
   pool_size: 5                  # 5 agents × 1 conn
@@ -387,7 +387,7 @@ __pycache__/
 
 **Ngày 1 — Repo Setup**
 - [ ] Tạo repo, init cấu trúc đầy đủ
-- [ ] Copy ETL modules từ onusreport: `cp onusreport/etl/*.py etl/` → test import 0 errors
+- [ ] Copy ETL modules từ vunpreport: `cp vunpreport/etl/*.py etl/` → test import 0 errors
 - [ ] Tạo `config/settings.yaml` + `.env` → `.gitignore` ngay
 - [ ] Verify S3 boto3 `list_objects` → OK · Kiểm tra Lifecycle 730 ngày
 - [ ] Chạy SQL tạo `risk_events` table (staging trước, production sau verify)
@@ -419,7 +419,7 @@ __pycache__/
 
 > Agent đầu tiên end-to-end · Template cho 4 agents còn lại
 
-- [ ] Viết `agents/onchain_agent.py` kế thừa BaseAgent, `fetch()` dùng `onuslibs.fetch_json`
+- [ ] Viết `agents/onchain_agent.py` kế thừa BaseAgent, `fetch()` dùng `vunplibs.fetch_json`
 - [ ] ETL handler: enrich → normalize → aggregate → `bulk_upsert(onchain_diary)` (tái dụng 100%)
 - [ ] Viết `risk/onchain_risk.py`: 4 rules — `structuring`, `velocity`, `off_hours`, `new_large` (threshold để YAML)
 - [ ] Viết `risk/risk_scorer.py`: score 0–10, `anomaly_x` **tắt 7 ngày đầu** (chưa có baseline DuckDB)
@@ -481,7 +481,7 @@ __pycache__/
 
 ### Phase 6 · Ngày 32–38 — Spot Agent + Cross-Market · 5 agents hoàn chỉnh
 
-> `spot_diary` đã tồn tại, order-level, ETL onuslibs đã chạy → **chỉ wrap vào BaseAgent**, ~2 ngày
+> `spot_diary` đã tồn tại, order-level, ETL vunplibs đã chạy → **chỉ wrap vào BaseAgent**, ~2 ngày
 
 - [ ] Viết `agents/spot_agent.py`: wrap ETL spot đã có, thêm `_parquet_handler` + `_risk_handler`
 - [ ] Viết `risk/spot_risk.py`: 4 rules — `order_layering`, `quote_stuffing`, `cross_market_pump`, `abnormal_fill_rate`
@@ -494,9 +494,9 @@ __pycache__/
 ### Phase 7 · Ngày 39–45 — Shadow Mode → Looker → Go-Live
 
 **Shadow Mode (5 đêm bắt buộc)**
-- [ ] Tạo Aurora schema staging `onusreport_ai_staging`
+- [ ] Tạo Aurora schema staging `vunpreport_ai_staging`
 - [ ] `SHADOW_MODE=true` → agents ghi staging, không production
-- [ ] Chạy 5 nights. Mỗi sáng: comparison script → divergence phải <5% vs onusreport cũ
+- [ ] Chạy 5 nights. Mỗi sáng: comparison script → divergence phải <5% vs vunpreport cũ
 - [ ] Calibrate threshold dựa trên alert volume thực tế → update `settings.yaml`
 
 **Looker Studio (ngày 3–5)**
@@ -507,7 +507,7 @@ __pycache__/
 **Go-Live (ngày 6–7)**
 - [ ] 5 đêm shadow OK + divergence <5% → tắt `SHADOW_MODE`
 - [ ] Monitor 48h đầu, verify Telegram briefing 6AM
-- [ ] Tắt Prefect/onusreport cũ **chỉ sau 5 ngày production ổn định**
+- [ ] Tắt Prefect/vunpreport cũ **chỉ sau 5 ngày production ổn định**
 
 ---
 
@@ -518,7 +518,7 @@ __pycache__/
 | Unit | Risk rules, score calc, parquet writer | pytest | Mỗi phase, trước push | 100%, 0 exception |
 | Integration | 1 agent full pipeline (DB staging) | Manual | Cuối mỗi phase | Parquet OK, diary update, alert gửi |
 | Stress | 5 agents song song + DB pool + S3 | Manual | Phase 6 sau Spot | Không deadlock |
-| Shadow | Toàn hệ thống vs onusreport cũ | Python script | Phase 7, 5 đêm | Divergence <5% |
+| Shadow | Toàn hệ thống vs vunpreport cũ | Python script | Phase 7, 5 đêm | Divergence <5% |
 
 ```python
 # tests/test_risk_rules.py
@@ -565,7 +565,7 @@ def test_confirm_updates_verdict():
 - [ ] DB connection pool không leak sau 1 đêm 5 agents
 - [ ] `settings.yaml` và `.env` không có trong git history
 - [ ] S3 bucket không public · IAM policy đúng · Aurora backup enabled
-- [ ] Divergence diary tables vs onusreport cũ <5%
+- [ ] Divergence diary tables vs vunpreport cũ <5%
 
 ### 🟡 Important — Nên có
 
@@ -639,13 +639,13 @@ ORDER BY risk_score DESC LIMIT 10;
 - OpenClaw tự nhắn Telegram: `"⚠️ exchange_agent failed: {error_msg}"`
 - `finalize_skill` bỏ qua group lỗi nếu không có `/tmp` file
 - Sáng: xem log → fix → chạy lại thủ công với `--date yesterday`
-- Data loss: 1 ngày × 1 agent → backfill từ API Onus
+- Data loss: 1 ngày × 1 agent → backfill từ API vunp
 
 ### L2 — Toàn hệ thống crash 🔴
-- onusreport cũ vẫn chạy → KPI báo cáo không bị gián đoạn
+- vunpreport cũ vẫn chạy → KPI báo cáo không bị gián đoạn
 - APScheduler fallback đã kích hoạt chưa? Check log
-- Xác định nguyên nhân: DB down? S3 outage? API Onus thay đổi schema?
-- Nếu API thay đổi: update onuslibs → test → deploy trong 24h
+- Xác định nguyên nhân: DB down? S3 outage? API vunp thay đổi schema?
+- Nếu API thay đổi: update vunplibs → test → deploy trong 24h
 
 ### L3 — Data Corruption 🟣
 - Stop tất cả agents ngay (kill cron + APScheduler)
@@ -653,7 +653,7 @@ ORDER BY risk_score DESC LIMIT 10;
 - S3 Parquet append-only — không bị ảnh hưởng, dùng để rebuild nếu cần
 - Replay với `SHADOW_MODE=true`, verify trước khi restore production
 
-> **Nguyên tắc bất biến**: onusreport cũ không tắt cho đến khi onusreport-ai ổn định ≥30 ngày liên tiếp không có sự cố nghiêm trọng.
+> **Nguyên tắc bất biến**: vunpreport cũ không tắt cho đến khi vunpreport-ai ổn định ≥30 ngày liên tiếp không có sự cố nghiêm trọng.
 
 ---
 
@@ -663,8 +663,8 @@ ORDER BY risk_score DESC LIMIT 10;
 |---|---|
 | Aurora MySQL | ✅ Có sẵn |
 | AWS S3 + IAM | ✅ Có sẵn |
-| onusreport ETL modules | ✅ Copy trực tiếp, không sửa |
-| onuslibs v3.1 | ✅ Có sẵn |
+| vunpreport ETL modules | ✅ Copy trực tiếp, không sửa |
+| vunplibs v3.1 | ✅ Có sẵn |
 | Telegram Bot | ⚠️ Tạo mới |
 | Slack Webhook | ⚠️ Tạo mới |
 | OpenClaw | ⚠️ Cài mới |
@@ -672,4 +672,4 @@ ORDER BY risk_score DESC LIMIT 10;
 
 ---
 
-*onusreport-ai v6 · build trên dữ liệu thực, confirmed từng điểm*
+*vunpreport-ai v6 · build trên dữ liệu thực, confirmed từng điểm*
